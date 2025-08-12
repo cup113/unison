@@ -21,10 +21,12 @@ class TodoManager {
     }
   }
 
-  void addTodo(String title) {
+  void addTodo(String title, {String category = '', int estimatedTime = 0}) {
     final todo = Todo(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       title: title,
+      category: category,
+      estimatedTime: estimatedTime,
     );
     _todos.add(todo);
     _notifyListeners();
@@ -35,20 +37,28 @@ class TodoManager {
     _notifyListeners();
   }
 
-  void updateTodo(String id, String title) {
+  void updateTodo(
+    String id,
+    String title, {
+    String? category,
+    int? estimatedTime,
+  }) {
     final index = _todos.indexWhere((todo) => todo.id == id);
     if (index != -1) {
-      _todos[index] = _todos[index].copyWith(title: title);
+      _todos[index] = _todos[index].copyWith(
+        title: title,
+        category: category,
+        estimatedTime: estimatedTime,
+      );
       _notifyListeners();
     }
   }
 
-  void toggleCompleted(String id) {
+  // 添加设置进度的方法
+  void setProgress(String id, int progress) {
     final index = _todos.indexWhere((todo) => todo.id == id);
     if (index != -1) {
-      _todos[index] = _todos[index].copyWith(
-        isCompleted: !_todos[index].isCompleted,
-      );
+      _todos[index] = _todos[index].copyWith(progress: progress);
       _notifyListeners();
     }
   }
@@ -69,10 +79,17 @@ class TodoManager {
     }
   }
 
-  Todo? getActiveTodo() {
-    return _todos.firstWhereOrNull(
-      (todo) => todo.isActive && !todo.isCompleted,
-    );
+  // 修改 getActiveTodo 方法，添加 includeCompleted 参数
+  Todo? getActiveTodo({bool includeCompleted = false}) {
+    if (includeCompleted) {
+      // 如果 includeCompleted 为 true，则返回所有活动任务，包括已完成的
+      return _todos.firstWhereOrNull((todo) => todo.isActive);
+    } else {
+      // 原来的逻辑，只返回未完成的活动任务
+      return _todos.firstWhereOrNull(
+        (todo) => todo.isActive && !todo.isCompleted,
+      );
+    }
   }
 }
 
