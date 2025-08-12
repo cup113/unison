@@ -1,9 +1,13 @@
 import 'dart:collection';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'todo.dart';
 
 class TodoManager {
   final List<Todo> _todos = [];
   final List<VoidCallback> _listeners = [];
+
+  static const String _todoListKey = 'todo_list';
 
   UnmodifiableListView<Todo> get todos => UnmodifiableListView(_todos);
 
@@ -21,6 +25,50 @@ class TodoManager {
     }
   }
 
+  Future<void> loadFromStorage() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // 加载待办事项列表
+    final todoListString = prefs.getString(_todoListKey);
+    if (todoListString != null) {
+      final List<dynamic> todoListJson = json.decode(todoListString);
+      _todos.clear();
+      for (final todoJson in todoListJson) {
+        _todos.add(
+          Todo(
+            id: todoJson['id'],
+            title: todoJson['title'],
+            progress: todoJson['progress'],
+            isActive: todoJson['isActive'],
+            category: todoJson['category'],
+            estimatedTime: todoJson['estimatedTime'],
+          ),
+        );
+      }
+    }
+
+    _notifyListeners();
+  }
+
+  Future<void> saveToStorage() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // 保存待办事项列表
+    final List<Map<String, dynamic>> todoListJson = _todos
+        .map(
+          (todo) => {
+            'id': todo.id,
+            'title': todo.title,
+            'progress': todo.progress,
+            'isActive': todo.isActive,
+            'category': todo.category,
+            'estimatedTime': todo.estimatedTime,
+          },
+        )
+        .toList();
+    prefs.setString(_todoListKey, json.encode(todoListJson));
+  }
+
   void addTodo(String title, {String category = '', int estimatedTime = 0}) {
     final todo = Todo(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -29,11 +77,13 @@ class TodoManager {
       estimatedTime: estimatedTime,
     );
     _todos.add(todo);
+    saveToStorage();
     _notifyListeners();
   }
 
   void removeTodo(String id) {
     _todos.removeWhere((todo) => todo.id == id);
+    saveToStorage();
     _notifyListeners();
   }
 
@@ -50,6 +100,7 @@ class TodoManager {
         category: category,
         estimatedTime: estimatedTime,
       );
+      saveToStorage();
       _notifyListeners();
     }
   }
@@ -59,6 +110,7 @@ class TodoManager {
     final index = _todos.indexWhere((todo) => todo.id == id);
     if (index != -1) {
       _todos[index] = _todos[index].copyWith(progress: progress);
+      saveToStorage();
       _notifyListeners();
     }
   }
@@ -75,6 +127,7 @@ class TodoManager {
     final index = _todos.indexWhere((todo) => todo.id == id);
     if (index != -1) {
       _todos[index] = _todos[index].copyWith(isActive: !_todos[index].isActive);
+      saveToStorage();
       _notifyListeners();
     }
   }

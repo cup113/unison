@@ -37,14 +37,26 @@ class _FocusTimerPageState extends State<FocusTimerPage>
     with WidgetsBindingObserver {
   late final TimerManager _timerManager;
   final TodoManager _todoManager = TodoManager();
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
+    _initManagers();
+  }
+
+  Future<void> _initManagers() async {
     _timerManager = TimerManager();
+    await _todoManager.loadFromStorage();
+    await _timerManager.loadFromStorage();
+
     WidgetsBinding.instance.addObserver(this);
     _todoManager.addListener(_handleTodoChange);
     _timerManager.addListener(_handleTimerChange);
+
+    setState(() {
+      _isLoading = false;
+    });
   }
 
   @override
@@ -98,6 +110,10 @@ class _FocusTimerPageState extends State<FocusTimerPage>
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (bool didPop, Object? result) {
