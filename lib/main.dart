@@ -18,7 +18,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Co-Progress',
+      title: 'Unison',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
         useMaterial3: true,
@@ -223,7 +223,7 @@ class _FocusTimerPageState extends State<FocusTimerPage>
       },
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Co-Progress 专注计时器'),
+          title: const Text('Unison 专注计时器'),
           backgroundColor: Theme.of(context).colorScheme.inversePrimary,
           actions: [
             IconButton(

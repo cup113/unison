@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.example" "\0"
-            VALUE "FileDescription", "co_progress" "\0"
+            VALUE "FileDescription", "unison" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "co_progress" "\0"
+            VALUE "InternalName", "unison" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2025 com.example. All rights reserved." "\0"
-            VALUE "OriginalFilename", "co_progress.exe" "\0"
-            VALUE "ProductName", "co_progress" "\0"
+            VALUE "OriginalFilename", "unison.exe" "\0"
+            VALUE "ProductName", "unison" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

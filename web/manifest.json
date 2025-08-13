@@ -1,6 +1,6 @@
 {
-    "name": "co_progress",
-    "short_name": "co_progress",
+    "name": "unison",
+    "short_name": "unison",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

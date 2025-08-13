@@ -1,4 +1,4 @@
-package com.example.co_progress
+package com.cup11.unison
 
 import io.flutter.embedding.android.FlutterActivity
 
