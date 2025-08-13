@@ -48,9 +48,8 @@ class ActiveTodoView extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: activeTodo.isCompleted
-                  ? Colors.grey[300]
-                  : Colors.green[100],
+              color:
+                  activeTodo.isCompleted ? Colors.grey[300] : Colors.green[100],
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
                 color: activeTodo.isCompleted ? Colors.grey : Colors.green,
@@ -101,7 +100,7 @@ class ActiveTodoView extends StatelessWidget {
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.blueGrey.withOpacity(0.2),
+                          color: Colors.blueGrey.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(

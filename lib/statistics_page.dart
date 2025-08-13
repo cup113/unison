@@ -58,30 +58,31 @@ class _StatisticsPageState extends State<StatisticsPage> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _records.isEmpty
-          ? const Center(
-              child: Text(
-                '暂无统计数据\n完成专注任务后将在此显示统计数据',
-                textAlign: TextAlign.center,
-              ),
-            )
-          : RefreshIndicator(
-              onRefresh: _loadRecords,
-              child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  _buildSummaryCard(),
-                  const SizedBox(height: 20),
-                  _buildSevenDaysChangeCard(),
-                  const SizedBox(height: 20),
-                  const Text(
-                    '专注历史',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ? const Center(
+                  child: Text(
+                    '暂无统计数据\n完成专注任务后将在此显示统计数据',
+                    textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 10),
-                  for (var record in _records) _buildRecordCard(record),
-                ],
-              ),
-            ),
+                )
+              : RefreshIndicator(
+                  onRefresh: _loadRecords,
+                  child: ListView(
+                    padding: const EdgeInsets.all(16),
+                    children: [
+                      _buildSummaryCard(),
+                      const SizedBox(height: 20),
+                      _buildSevenDaysChangeCard(),
+                      const SizedBox(height: 20),
+                      const Text(
+                        '专注历史',
+                        style: TextStyle(
+                            fontSize: 20, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 10),
+                      for (var record in _records) _buildRecordCard(record),
+                    ],
+                  ),
+                ),
     );
   }
 
@@ -98,13 +99,13 @@ class _StatisticsPageState extends State<StatisticsPage> {
     );
     double completionRate = totalSessions > 0
         ? _records
-                  .where(
-                    (record) =>
-                        record['actualDuration'] >=
-                        record['plannedDuration'] * 0.9,
-                  )
-                  .length /
-              totalSessions
+                .where(
+                  (record) =>
+                      record['actualDuration'] >=
+                      record['plannedDuration'] * 0.9,
+                )
+                .length /
+            totalSessions
         : 0.0;
 
     int totalPauseCount = _records.fold(
@@ -148,37 +149,44 @@ class _StatisticsPageState extends State<StatisticsPage> {
     );
   }
 
+// ... existing code ...
   Widget _buildSevenDaysChangeCard() {
     // 计算最近7天的数据
     final now = DateTime.now();
-    final sevenDaysAgo = now.subtract(const Duration(days: 7));
+    List<Map<String, dynamic>> dailyData = [];
 
-    final recentRecords = _records.where((record) {
-      final startTime = DateTime.fromMillisecondsSinceEpoch(
-        record['startTime'],
+    // 初始化最近7天的数据（包括今天）
+    for (int i = 6; i >= 0; i--) {
+      final date = now.subtract(Duration(days: i));
+      final dateStr = DateFormat('MM-dd').format(date);
+
+      // 查找该日期的记录
+      final dayRecords = _records.where((record) {
+        final startTime =
+            DateTime.fromMillisecondsSinceEpoch(record['startTime']);
+        return startTime.year == date.year &&
+            startTime.month == date.month &&
+            startTime.day == date.day;
+      }).toList();
+
+      // 计算当日专注时长
+      int dailyMinutes = dayRecords.fold(
+        0,
+        (sum, record) => (sum + record['actualDuration']) as int,
       );
-      return startTime.isAfter(sevenDaysAgo);
-    }).toList();
 
-    int recentSessions = recentRecords.length;
-    int recentMinutes = recentRecords.fold(
-      0,
-      (sum, record) => (sum + record['actualDuration']) as int,
-    );
-    int recentPlannedMinutes = recentRecords.fold(
-      0,
-      (sum, record) => (sum + record['plannedDuration']) as int,
-    );
-    double recentCompletionRate = recentSessions > 0
-        ? recentRecords
-                  .where(
-                    (record) =>
-                        record['actualDuration'] >=
-                        record['plannedDuration'] * 0.9,
-                  )
-                  .length /
-              recentSessions
-        : 0.0;
+      dailyData.add({
+        'date': dateStr,
+        'minutes': dailyMinutes,
+        'records': dayRecords,
+      });
+    }
+
+    // 计算最大专注时长用于图表比例
+    int maxMinutes = dailyData
+        .map((d) => d['minutes'] as int)
+        .reduce((a, b) => a > b ? a : b);
+    if (maxMinutes == 0) maxMinutes = 1; // 避免除零
 
     return Card(
       child: Padding(
@@ -191,21 +199,67 @@ class _StatisticsPageState extends State<StatisticsPage> {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
-            _buildStatRow('专注次数', '$recentSessions 次'),
+            // 显示每日专注时长的柱状图
+            SizedBox(
+              height: 150,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  for (var dayData in dailyData)
+                    _buildDayChartBar(
+                      dayData['date'],
+                      dayData['minutes'],
+                      maxMinutes,
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+            // 显示统计数据摘要
             _buildStatRow(
-              '专注时长',
-              '${(recentMinutes / 60).toStringAsFixed(1)} 小时',
+              '平均每日专注',
+              '${(dailyData.fold(0, (prev, elem) => prev + (elem['minutes'] as int)) / 7).toStringAsFixed(1)} 分钟',
             ),
             _buildStatRow(
-              '计划时长',
-              '${(recentPlannedMinutes / 60).toStringAsFixed(1)} 小时',
-            ),
-            _buildStatRow(
-              '完成率',
-              '${(recentCompletionRate * 100).toStringAsFixed(1)}%',
+              '最专注的一天',
+              '$maxMinutes 分钟',
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildDayChartBar(String date, int minutes, int maxMinutes) {
+    double barHeight = maxMinutes > 0 ? (minutes / maxMinutes) * 100 : 0;
+
+    return Expanded(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          // 数值标签
+          Text(
+            minutes.toString(),
+            style: const TextStyle(fontSize: 10),
+          ),
+          // 图表柱
+          Container(
+            height: barHeight,
+            width: 20,
+            decoration: BoxDecoration(
+              color: minutes > 0 ? Colors.blue : Colors.grey[300],
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(4),
+                topRight: Radius.circular(4),
+              ),
+            ),
+          ),
+          // 日期标签
+          Text(
+            date,
+            style: const TextStyle(fontSize: 10),
+          ),
+        ],
       ),
     );
   }
@@ -250,7 +304,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  DateFormat('MM-dd HH:mm').format(startTime),
+                  '${DateFormat('MM-dd HH:mm').format(startTime)} - ${DateFormat('MM-dd HH:mm').format(endTime)}',
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -273,44 +327,78 @@ class _StatisticsPageState extends State<StatisticsPage> {
               ],
             ),
             const SizedBox(height: 4),
-            _buildRecordStatRow('计划时长', '$plannedDuration 分钟'),
-            _buildRecordStatRow('实际时长', '$actualDuration 分钟'),
-            if (todoFocusedTime != null)
-              _buildRecordStatRow('专注时间', '$todoFocusedTime 分钟'),
-            _buildRecordStatRow('暂停次数', '$pauseCount 次'),
-            _buildRecordStatRow('退出次数', '$exitCount 次'),
-            if (todoTitle != null) ...[
-              const SizedBox(height: 4),
-              Text('关联任务: $todoTitle', style: const TextStyle(fontSize: 14)),
-            ],
-            if (todoProgress != null)
-              _buildRecordStatRow('任务进度', '$todoProgress/10'),
-            const SizedBox(height: 4),
-            Text(
-              '结束于 ${DateFormat('MM-dd HH:mm').format(endTime)}',
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
+            // 第一行：时长信息
+            Row(
+              children: [
+                _buildCompactRecordStat(
+                    '计划', '$plannedDuration分钟', Colors.blue),
+                const SizedBox(width: 8),
+                _buildCompactRecordStat(
+                    '实际',
+                    '$actualDuration分钟',
+                    actualDuration >= plannedDuration
+                        ? Colors.green
+                        : Colors.red),
+                if (todoFocusedTime != null) ...[
+                  const SizedBox(width: 8),
+                  _buildCompactRecordStat(
+                      '专注', '${todoFocusedTime}分钟', Colors.purple),
+                ],
+              ],
             ),
+            const SizedBox(height: 4),
+            // 第二行：次数信息和任务信息
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    _buildCompactRecordStat(
+                        '暂停', '$pauseCount次', Colors.orange),
+                    const SizedBox(width: 8),
+                    _buildCompactRecordStat('退出', '$exitCount次', Colors.orange),
+                  ],
+                ),
+                if (todoTitle != null)
+                  Expanded(
+                    child: Text(
+                      todoTitle,
+                      style: const TextStyle(fontSize: 14, color: Colors.blue),
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.right,
+                    ),
+                  ),
+              ],
+            ),
+            if (todoProgress != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: LinearProgressIndicator(
+                  value: (todoProgress ?? 0) / 10,
+                  backgroundColor: Colors.grey[300],
+                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.blue),
+                ),
+              ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildRecordStatRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 1),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 70,
-            child: Text(
-              label,
-              style: const TextStyle(fontSize: 14, color: Colors.grey),
-            ),
-          ),
-          Text(value, style: const TextStyle(fontSize: 14)),
-        ],
-      ),
+  Widget _buildCompactRecordStat(String label, String value, Color color) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          '$label:',
+          style: const TextStyle(fontSize: 12, color: Colors.grey),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+              fontSize: 12, fontWeight: FontWeight.w500, color: color),
+        ),
+      ],
     );
   }
 }

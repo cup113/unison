@@ -132,20 +132,23 @@ class TodoManager {
   }
 
   void toggleActive(String id) {
-    // 先取消其他所有活动项
-    for (int i = 0; i < _todos.length; i++) {
-      if (_todos[i].isActive) {
-        _todos[i] = _todos[i].copyWith(isActive: false);
+    final index = _todos.indexWhere((todo) => todo.id == id);
+    if (index == -1) return;
+    if (_todos[index].isActive) {
+      // 如果当前任务已处于活动状态，则将其取消
+      _todos[index] = _todos[index].copyWith(isActive: false);
+    } else {
+      // 先取消其他所有活动项
+      for (int i = 0; i < _todos.length; i++) {
+        if (_todos[i].isActive) {
+          _todos[i] = _todos[i].copyWith(isActive: false);
+        }
       }
+      _todos[index] = _todos[index].copyWith(isActive: !_todos[index].isActive);
     }
 
-    // 激活当前项
-    final index = _todos.indexWhere((todo) => todo.id == id);
-    if (index != -1) {
-      _todos[index] = _todos[index].copyWith(isActive: !_todos[index].isActive);
-      saveToStorage();
-      _notifyListeners();
-    }
+    saveToStorage();
+    _notifyListeners();
   }
 
   // 修改 getActiveTodo 方法，添加 includeCompleted 参数

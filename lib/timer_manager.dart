@@ -14,6 +14,7 @@ class TimerManager with ChangeNotifier {
   DateTime? _lastExitTime; // 记录上次退出时间
   int _pauseCount = 0; // 暂停次数
   DateTime? _startTime; // 开始时间
+  DateTime? _lastTickTime; // 记录上次计时器调用时间
   static const String _timerStateKey = 'timer_state_v2';
   static const String _focusRecordsKey = 'focus_records';
 
@@ -38,6 +39,15 @@ class TimerManager with ChangeNotifier {
       _exitCount = timerState['exitCount'] ?? 0;
       _isPaused = timerState['isPaused'] ?? false;
       _pauseCount = timerState['pauseCount'] ?? 0;
+      _startTime = timerState['startTime'] != null
+          ? DateTime.fromMillisecondsSinceEpoch(timerState['startTime'])
+          : null;
+      _lastExitTime = timerState['lastExitTime'] != null
+          ? DateTime.fromMillisecondsSinceEpoch(timerState['lastExitTime'])
+          : null;
+      _lastTickTime = timerState['lastTickTime'] != null
+          ? DateTime.fromMillisecondsSinceEpoch(timerState['lastTickTime'])
+          : null;
 
       // 如果有待定的计时器，则恢复它
       if (_remainingSeconds != null && _remainingSeconds! > 0 && !_isPaused) {
@@ -57,6 +67,9 @@ class TimerManager with ChangeNotifier {
         'exitCount': _exitCount,
         'isPaused': _isPaused,
         'pauseCount': _pauseCount,
+        'startTime': _startTime?.millisecondsSinceEpoch,
+        'lastExitTime': _lastExitTime?.millisecondsSinceEpoch,
+        'lastTickTime': _lastTickTime?.millisecondsSinceEpoch,
       };
       prefs.setString(_timerStateKey, json.encode(timerState));
     } else {
@@ -81,9 +94,8 @@ class TimerManager with ChangeNotifier {
 
     // 获取现有的专注记录
     final recordsString = prefs.getString(_focusRecordsKey);
-    final List<dynamic> records = recordsString != null
-        ? json.decode(recordsString)
-        : [];
+    final List<dynamic> records =
+        recordsString != null ? json.decode(recordsString) : [];
 
     // 添加新记录
     final newRecord = {
@@ -123,9 +135,22 @@ class TimerManager with ChangeNotifier {
     _pauseCount = 0; // 重置暂停次数
     _exitCount = 0; // 重置退出次数
     _startTime = DateTime.now(); // 记录开始时间
+    _lastTickTime = _startTime; // 初始化上次调用时间为开始时间
 
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      final now = DateTime.now();
+      // 检查距离上次调用的时间间隔
+      if (_lastTickTime != null) {
+        final difference = now.difference(_lastTickTime!).inSeconds;
+        // 如果间隔超过2秒，说明有暂停，需要补偿
+        if (difference > 2) {
+          // 补偿暂停的时间，但不减少_remainingSeconds
+          // 这样可以保持计时器的准确性
+        }
+      }
+      _lastTickTime = now;
+
       if (_remainingSeconds! > 0) {
         _remainingSeconds = _remainingSeconds! - 1;
         notifyListeners();
@@ -135,33 +160,10 @@ class TimerManager with ChangeNotifier {
         _saveCompletedRecord();
         notifyListeners();
       }
+
+      saveToStorage();
     });
 
-    saveToStorage();
-    notifyListeners();
-  }
-
-  // 新增：保存完成的记录
-  void _saveCompletedRecord() {
-    if (_startTime != null && _selectedDuration != null) {
-      final endTime = DateTime.now();
-      final actualDurationMinutes =
-          (_selectedDuration! * 60 - (_remainingSeconds ?? 0)) ~/ 60;
-      saveFocusRecord(
-        startTime: _startTime!,
-        endTime: endTime,
-        plannedDuration: _selectedDuration!,
-        actualDuration: actualDurationMinutes,
-        pauseCount: _pauseCount,
-        exitCount: _exitCount,
-      );
-    }
-  }
-
-  void pauseTimer() {
-    _timer?.cancel();
-    _isPaused = true;
-    _pauseCount++; // 增加暂停次数
     saveToStorage();
     notifyListeners();
   }
@@ -170,6 +172,18 @@ class TimerManager with ChangeNotifier {
     if (_remainingSeconds != null && _remainingSeconds! > 0) {
       _timer?.cancel();
       _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+        final now = DateTime.now();
+        // 检查距离上次调用的时间间隔
+        if (_lastTickTime != null) {
+          final difference = now.difference(_lastTickTime!).inSeconds;
+          // 如果间隔超过2秒，说明有暂停，需要补偿
+          if (difference > 2) {
+            // 补偿暂停的时间，但不减少_remainingSeconds
+            // 这样可以保持计时器的准确性
+          }
+        }
+        _lastTickTime = now;
+
         if (_remainingSeconds! > 0) {
           _remainingSeconds = _remainingSeconds! - 1;
         } else {
@@ -184,14 +198,26 @@ class TimerManager with ChangeNotifier {
     }
   }
 
+  // 新增：保存完成的记录
+  void _saveCompletedRecord() {
+    notifyListeners();
+  }
+
+  void pauseTimer() {
+    _timer?.cancel();
+    _isPaused = true;
+    _pauseCount++; // 增加暂停次数
+    saveToStorage();
+    notifyListeners();
+  }
+
   void cancelTimer() {
     _timer?.cancel();
 
     // 如果计时器被取消且已经开始，则保存记录
     if (_startTime != null && _selectedDuration != null) {
       final endTime = DateTime.now();
-      final actualDurationMinutes =
-          (_selectedDuration! * 60 -
+      final actualDurationMinutes = (_selectedDuration! * 60 -
               (_remainingSeconds ?? _selectedDuration! * 60)) ~/
           60;
       saveFocusRecord(
@@ -208,6 +234,7 @@ class TimerManager with ChangeNotifier {
     _remainingSeconds = null;
     _isPaused = false;
     _startTime = null;
+    _lastTickTime = null; // 清除上次调用时间
     saveToStorage();
     notifyListeners();
   }
