@@ -4,7 +4,14 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class TimerManager with ChangeNotifier {
-  static const List<int> presetDurations = [25, 40, 60, 90]; // in minutes
+  static const List<int> presetDurations = [
+    5,
+    15,
+    25,
+    40,
+    60,
+    90
+  ]; // in minutes
 
   int? _selectedDuration;
   int? _remainingSeconds;
