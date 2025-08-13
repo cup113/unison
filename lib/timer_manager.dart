@@ -183,10 +183,9 @@ class TimerManager with ChangeNotifier {
         // 检查距离上次调用的时间间隔
         if (_lastTickTime != null) {
           final difference = now.difference(_lastTickTime!).inSeconds;
-          // 如果间隔超过2秒，说明有暂停，需要补偿
+          // 如果间隔超过2秒，说明在后台运行或熄屏，需要补偿
           if (difference > 2) {
-            // 补偿暂停的时间，但不减少_remainingSeconds
-            // 这样可以保持计时器的准确性
+            _remainingSeconds = _remainingSeconds! - difference;
           }
         }
         _lastTickTime = now;
