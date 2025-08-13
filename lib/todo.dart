@@ -5,6 +5,7 @@ class Todo {
   bool isActive;
   String category; // 类别字段
   int estimatedTime; // 预计时间字段(以分钟为单位)
+  int focusedTime; // 已专注时间字段(以分钟为单位)
 
   Todo({
     required this.id,
@@ -13,6 +14,7 @@ class Todo {
     this.isActive = false,
     this.category = '',
     this.estimatedTime = 0, // 0表示未设置预计时间
+    this.focusedTime = 0, // 默认专注时间为0
   });
 
   // 添加一个getter来判断任务是否完成(进度为10时完成)
@@ -25,6 +27,7 @@ class Todo {
     bool? isActive,
     String? category,
     int? estimatedTime,
+    int? focusedTime,
   }) {
     return Todo(
       id: id ?? this.id,
@@ -33,6 +36,7 @@ class Todo {
       isActive: isActive ?? this.isActive,
       category: category ?? this.category,
       estimatedTime: estimatedTime ?? this.estimatedTime,
+      focusedTime: focusedTime ?? this.focusedTime,
     );
   }
 }

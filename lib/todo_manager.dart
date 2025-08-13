@@ -7,7 +7,7 @@ class TodoManager {
   final List<Todo> _todos = [];
   final List<VoidCallback> _listeners = [];
 
-  static const String _todoListKey = 'todo_list';
+  static const String _todoListKey = 'todo_list_v2';
 
   UnmodifiableListView<Todo> get todos => UnmodifiableListView(_todos);
 
@@ -42,6 +42,7 @@ class TodoManager {
             isActive: todoJson['isActive'],
             category: todoJson['category'],
             estimatedTime: todoJson['estimatedTime'],
+            focusedTime: todoJson['focusedTime'] ?? 0, // 添加focusedTime字段
           ),
         );
       }
@@ -63,6 +64,7 @@ class TodoManager {
             'isActive': todo.isActive,
             'category': todo.category,
             'estimatedTime': todo.estimatedTime,
+            'focusedTime': todo.focusedTime, // 添加focusedTime字段
           },
         )
         .toList();
@@ -92,6 +94,7 @@ class TodoManager {
     String title, {
     String? category,
     int? estimatedTime,
+    int? focusedTime,
   }) {
     final index = _todos.indexWhere((todo) => todo.id == id);
     if (index != -1) {
@@ -99,6 +102,7 @@ class TodoManager {
         title: title,
         category: category,
         estimatedTime: estimatedTime,
+        focusedTime: focusedTime,
       );
       saveToStorage();
       _notifyListeners();
@@ -110,6 +114,18 @@ class TodoManager {
     final index = _todos.indexWhere((todo) => todo.id == id);
     if (index != -1) {
       _todos[index] = _todos[index].copyWith(progress: progress);
+      saveToStorage();
+      _notifyListeners();
+    }
+  }
+
+  // 添加增加专注时间的方法
+  void addFocusedTime(String id, int minutes) {
+    final index = _todos.indexWhere((todo) => todo.id == id);
+    if (index != -1) {
+      _todos[index] = _todos[index].copyWith(
+        focusedTime: _todos[index].focusedTime + minutes,
+      );
       saveToStorage();
       _notifyListeners();
     }

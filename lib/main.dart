@@ -3,7 +3,9 @@ import 'package:flutter/services.dart';
 import 'todo_manager.dart';
 import 'todo_list_widget.dart';
 import 'timer_manager.dart';
-import 'active_todo_view.dart';
+import 'setup_view.dart';
+import 'timer_view.dart';
+import 'statistics_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -76,21 +78,116 @@ class _FocusTimerPageState extends State<FocusTimerPage>
   }
 
   void _showTimerCompleteDialog() {
+    final activeTodo = _todoManager.getActiveTodo(includeCompleted: true);
+    int actualDuration = _timerManager.selectedDuration ?? 0;
+    int adjustedProgress = activeTodo?.progress ?? 0;
+    int adjustedDuration = actualDuration;
+
     showDialog(
       context: context,
+      barrierDismissible: false, // 用户必须确认对话框
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('专注完成'),
-          content: const Text('恭喜你完成专注任务！'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                _timerManager.cancelTimer();
-              },
-              child: const Text('确定'),
-            ),
-          ],
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('专注完成'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('恭喜你完成专注任务！'),
+                    const SizedBox(height: 16),
+                    if (activeTodo != null) ...[
+                      Text('任务: ${activeTodo.title}'),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const Text('实际专注时间:'),
+                          const SizedBox(width: 8),
+                          DropdownButton<int>(
+                            value: adjustedDuration,
+                            items: List.generate(
+                              11, // 最多可增加10分钟
+                              (index) => DropdownMenuItem(
+                                value: actualDuration + index,
+                                child: Text('${actualDuration + index} 分钟'),
+                              ),
+                            ),
+                            onChanged: (value) {
+                              setState(() {
+                                adjustedDuration = value!;
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const Text('任务进度:'),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Slider(
+                              value: adjustedProgress.toDouble(),
+                              min: 0,
+                              max: 10,
+                              divisions: 10,
+                              label: adjustedProgress.toString(),
+                              onChanged: (value) {
+                                setState(() {
+                                  adjustedProgress = value.toInt();
+                                });
+                              },
+                            ),
+                          ),
+                          Text('$adjustedProgress/10'),
+                        ],
+                      ),
+                    ] else
+                      const Text('未选择任务'),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () async {
+                    // 更新TODO的进度和专注时间
+                    if (activeTodo != null) {
+                      _todoManager.setProgress(activeTodo.id, adjustedProgress);
+                      _todoManager.addFocusedTime(
+                        activeTodo.id,
+                        adjustedDuration,
+                      );
+                    }
+
+                    // 保存专注记录
+                    if (_timerManager.startTime != null &&
+                        _timerManager.selectedDuration != null) {
+                      final endTime = DateTime.now();
+                      await _timerManager.saveFocusRecord(
+                        startTime: _timerManager.startTime!,
+                        endTime: endTime,
+                        plannedDuration: _timerManager.selectedDuration!,
+                        actualDuration: adjustedDuration,
+                        pauseCount: _timerManager.pauseCount,
+                        exitCount: _timerManager.exitCount,
+                        todoId: activeTodo?.id,
+                        todoTitle: activeTodo?.title,
+                        todoProgress: adjustedProgress,
+                        todoFocusedTime: adjustedDuration,
+                      );
+                    }
+
+                    // 关闭对话框并取消计时器
+                    Navigator.of(context).pop();
+                    _timerManager.cancelTimer();
+                  },
+                  child: const Text('确认'),
+                ),
+              ],
+            );
+          },
         );
       },
     );
@@ -103,7 +200,7 @@ class _FocusTimerPageState extends State<FocusTimerPage>
     if (state == AppLifecycleState.inactive) {
       if (_timerManager.remainingSeconds != null &&
           _timerManager.remainingSeconds! > 0) {
-        _timerManager.incrementExitCount();
+        _timerManager.handleAppExit();
       }
     }
   }
@@ -129,6 +226,10 @@ class _FocusTimerPageState extends State<FocusTimerPage>
           title: const Text('Co-Progress 专注计时器'),
           backgroundColor: Theme.of(context).colorScheme.inversePrimary,
           actions: [
+            IconButton(
+              icon: const Icon(Icons.bar_chart),
+              onPressed: _showStatistics,
+            ),
             IconButton(icon: const Icon(Icons.list), onPressed: _showTodoList),
           ],
         ),
@@ -153,6 +254,15 @@ class _FocusTimerPageState extends State<FocusTimerPage>
     );
   }
 
+  void _showStatistics() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => StatisticsPage(timerManager: _timerManager),
+      ),
+    );
+  }
+
   void _showTodoList() {
     showModalBottomSheet(
       context: context,
@@ -173,149 +283,6 @@ class _FocusTimerPageState extends State<FocusTimerPage>
           },
         );
       },
-    );
-  }
-}
-
-class SetupView extends StatelessWidget {
-  final TimerManager timerManager;
-  final int exitCount;
-  final TodoManager todoManager;
-
-  const SetupView({
-    super.key,
-    required this.timerManager,
-    required this.exitCount,
-    required this.todoManager,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        const Text(
-          '选择专注时长',
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 40),
-        Wrap(
-          spacing: 20,
-          runSpacing: 20,
-          children: TimerManager.presetDurations.map((minutes) {
-            return ElevatedButton(
-              onPressed: () => timerManager.startTimer(minutes),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 16,
-                ),
-                textStyle: const TextStyle(fontSize: 20),
-              ),
-              child: Text('$minutes分钟'),
-            );
-          }).toList(),
-        ),
-        const SizedBox(height: 40),
-        Text(
-          '退出次数: $exitCount',
-          style: const TextStyle(fontSize: 16, color: Colors.red),
-        ),
-        const SizedBox(height: 20),
-        ActiveTodoView(todoManager: todoManager),
-      ],
-    );
-  }
-}
-
-class TimerView extends StatelessWidget {
-  final TimerManager timerManager;
-  final int selectedDuration;
-  final int remainingSeconds;
-  final bool isPaused;
-  final int exitCount;
-  final TodoManager todoManager;
-  final VoidCallback onTimerComplete;
-
-  const TimerView({
-    super.key,
-    required this.timerManager,
-    required this.selectedDuration,
-    required this.remainingSeconds,
-    required this.isPaused,
-    required this.exitCount,
-    required this.todoManager,
-    required this.onTimerComplete,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    // 检查计时器是否完成
-    if (remainingSeconds <= 0 && timerManager.isTimerActive == false) {
-      // 延迟调用完成回调，确保UI更新
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        onTimerComplete();
-      });
-    }
-
-    final minutes = (remainingSeconds / 60).floor();
-    final seconds = remainingSeconds % 60;
-
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}',
-          style: const TextStyle(fontSize: 64, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 40),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            ElevatedButton(
-              onPressed: () {
-                if (timerManager.isTimerActive) {
-                  timerManager.pauseTimer();
-                } else {
-                  timerManager.resumeTimer();
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 32,
-                  vertical: 16,
-                ),
-                textStyle: const TextStyle(fontSize: 18),
-              ),
-              child: Text(isPaused ? '继续' : '暂停'),
-            ),
-            const SizedBox(width: 20),
-            ElevatedButton(
-              onPressed: timerManager.cancelTimer,
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 32,
-                  vertical: 16,
-                ),
-                textStyle: const TextStyle(fontSize: 18),
-              ),
-              child: const Text('取消'),
-            ),
-          ],
-        ),
-        const SizedBox(height: 40),
-        Text(
-          '$selectedDuration分钟专注中...',
-          style: const TextStyle(fontSize: 18, color: Colors.grey),
-        ),
-        const SizedBox(height: 20),
-        Text(
-          '退出次数: $exitCount',
-          style: const TextStyle(fontSize: 16, color: Colors.red),
-        ),
-        const SizedBox(height: 20),
-        ActiveTodoView(todoManager: todoManager),
-      ],
     );
   }
 }

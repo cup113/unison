@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'todo_manager.dart';
+import 'timer_manager.dart';
 
 class ActiveTodoView extends StatelessWidget {
   final TodoManager todoManager;
@@ -159,6 +160,52 @@ class ActiveTodoView extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class SetupView extends StatelessWidget {
+  final TimerManager timerManager;
+  final int exitCount;
+  final TodoManager todoManager;
+
+  const SetupView({
+    super.key,
+    required this.timerManager,
+    required this.exitCount,
+    required this.todoManager,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Text(
+          '选择专注时长',
+          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 40),
+        Wrap(
+          spacing: 20,
+          runSpacing: 20,
+          children: TimerManager.presetDurations.map((minutes) {
+            return ElevatedButton(
+              onPressed: () => timerManager.startTimer(minutes),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
+                ),
+                textStyle: const TextStyle(fontSize: 20),
+              ),
+              child: Text('$minutes分钟'),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 20),
+        ActiveTodoView(todoManager: todoManager),
+      ],
     );
   }
 }
