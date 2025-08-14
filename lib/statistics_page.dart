@@ -128,21 +128,42 @@ class _StatisticsPageState extends State<StatisticsPage> {
   }
 
   Widget _buildSevenDaysChangeCard() {
-    // 过去7天的数据
+    // 计算最近7天的数据
     final now = DateTime.now();
-    final sevenDaysAgo = now.subtract(const Duration(days: 7));
+    List<Map<String, dynamic>> dailyData = [];
 
-    final recentRecords = _records.where((record) {
-      final recordTime =
-          DateTime.fromMillisecondsSinceEpoch(record['startTime']);
-      return recordTime.isAfter(sevenDaysAgo);
-    }).toList();
+    // 初始化最近7天的数据（包括今天）
+    for (int i = 6; i >= 0; i--) {
+      final date = now.subtract(Duration(days: i));
+      final dateStr = DateFormat('MM-dd').format(date);
 
-    int recentSessions = recentRecords.length;
-    int recentMinutes = recentRecords.fold(
-      0,
-      (sum, record) => (sum + record['actualDuration']) as int,
-    );
+      // 查找该日期的记录
+      final dayRecords = _records.where((record) {
+        final startTime =
+            DateTime.fromMillisecondsSinceEpoch(record['startTime']);
+        return startTime.year == date.year &&
+            startTime.month == date.month &&
+            startTime.day == date.day;
+      }).toList();
+
+      // 计算当日专注时长
+      int dailyMinutes = dayRecords.fold(
+        0,
+        (sum, record) => (sum + record['actualDuration']) as int,
+      );
+
+      dailyData.add({
+        'date': dateStr,
+        'minutes': dailyMinutes,
+        'records': dayRecords,
+      });
+    }
+
+    // 计算最大专注时长用于图表比例
+    int maxMinutes = dailyData
+        .map((d) => d['minutes'] as int)
+        .reduce((a, b) => a > b ? a : b);
+    if (maxMinutes == 0) maxMinutes = 1; // 避免除零
 
     return Card(
       child: Padding(
@@ -151,14 +172,71 @@ class _StatisticsPageState extends State<StatisticsPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              '近7天',
+              '近7天变化',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
-            _buildStatRow('专注次数', '$recentSessions 次'),
-            _buildStatRow('专注时长', '$recentMinutes 分钟'),
+            // 显示每日专注时长的柱状图
+            SizedBox(
+              height: 150,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  for (var dayData in dailyData)
+                    _buildDayChartBar(
+                      dayData['date'],
+                      dayData['minutes'],
+                      maxMinutes,
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+            // 显示统计数据摘要
+            _buildStatRow(
+              '平均每日专注',
+              '${(dailyData.fold(0, (prev, elem) => prev + (elem['minutes'] as int)) / 7).toStringAsFixed(1)} 分钟',
+            ),
+            _buildStatRow(
+              '最专注的一天',
+              '$maxMinutes 分钟',
+            ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildDayChartBar(String date, int minutes, int maxMinutes) {
+    double barHeight = maxMinutes > 0 ? (minutes / maxMinutes) * 100 : 0;
+
+    return Expanded(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          // 数值标签
+          Text(
+            minutes.toString(),
+            style: const TextStyle(fontSize: 10),
+          ),
+          // 图表柱
+          Container(
+            height: barHeight,
+            width: 20,
+            decoration: BoxDecoration(
+              color: minutes > 0 ? Colors.blue : Colors.grey[300],
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(4),
+                topRight: Radius.circular(4),
+              ),
+            ),
+          ),
+          // 日期标签
+          Text(
+            date,
+            style: const TextStyle(fontSize: 10),
+          ),
+        ],
       ),
     );
   }
@@ -186,7 +264,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
     final actualDuration = record['actualDuration'];
     final pauseCount = record['pauseCount'] ?? 0;
     final exitCount = record['exitCount'] ?? 0;
-    final todoData = record['todoData']; // 现在是列表形式
+    final todoData = record['todoData'];
 
     bool isCompleted = actualDuration >= plannedDuration * 0.9;
 
@@ -223,26 +301,37 @@ class _StatisticsPageState extends State<StatisticsPage> {
                 ),
               ],
             ),
-            const SizedBox(height: 4),
-            _buildRecordStatRow('计划时长', '$plannedDuration 分钟'),
-            _buildRecordStatRow('实际时长', '$actualDuration 分钟'),
-            _buildRecordStatRow('暂停次数', '$pauseCount 次'),
-            _buildRecordStatRow('退出次数', '$exitCount 次'),
-            if (todoData != null && todoData is List) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildRecordStatRow('计划', '$plannedDuration 分钟'),
+                ),
+                Expanded(
+                  child: _buildRecordStatRow('实际', '$actualDuration 分钟'),
+                ),
+              ],
+            ),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildRecordStatRow('暂停', '$pauseCount 次'),
+                ),
+                Expanded(
+                  child: _buildRecordStatRow('退出', '$exitCount 次'),
+                ),
+              ],
+            ),
+            if (todoData != null) ...[
               const SizedBox(height: 4),
               const Text(
                 '关联任务:',
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
-              for (var todo in todoData) _buildTodoInfoRow(todo),
-            ] else if (todoData != null && todoData is Map) ...[
-              // 兼容旧数据格式
-              const SizedBox(height: 4),
-              const Text(
-                '关联任务:',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              _buildTodoInfoRow(Map<String, dynamic>.from(todoData)),
+              if (todoData is List)
+                for (var todo in todoData) _buildTodoInfoRow(todo)
+              else if (todoData is Map)
+                _buildTodoInfoRow(Map<String, dynamic>.from(todoData)),
             ],
           ],
         ),

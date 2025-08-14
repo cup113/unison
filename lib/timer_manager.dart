@@ -112,16 +112,6 @@ class TimerManager with ChangeNotifier {
     prefs.setString(_focusRecordsKey, json.encode(records));
   }
 
-  // 新增：获取专注记录
-  Future<List<Map<String, dynamic>>> getFocusRecords() async {
-    final prefs = await SharedPreferences.getInstance();
-    final recordsString = prefs.getString(_focusRecordsKey);
-    if (recordsString != null) {
-      return List<Map<String, dynamic>>.from(json.decode(recordsString));
-    }
-    return [];
-  }
-
   void startTimer(int minutes) {
     _selectedDuration = minutes;
     _remainingSeconds = minutes * 60;
@@ -132,6 +122,20 @@ class TimerManager with ChangeNotifier {
     _lastTickTime = _startTime; // 初始化上次调用时间为开始时间
 
     _timer?.cancel();
+    _startTimerPeriodic();
+    saveToStorage();
+    notifyListeners();
+  }
+
+  void resumeTimer() {
+    if (_remainingSeconds != null && _remainingSeconds! > 0) {
+      _timer?.cancel();
+      _startTimerPeriodic();
+    }
+  }
+
+  // 提取公共的计时器逻辑到私有方法
+  void _startTimerPeriodic() {
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       final now = DateTime.now();
       // 检查距离上次调用的时间间隔
@@ -149,66 +153,11 @@ class TimerManager with ChangeNotifier {
         notifyListeners();
       } else {
         _timer?.cancel();
-        // 计时器完成时保存记录
-        _saveCompletedRecord();
         notifyListeners();
       }
 
       saveToStorage();
     });
-
-    saveToStorage();
-    notifyListeners();
-  }
-
-  void resumeTimer() {
-    if (_remainingSeconds != null && _remainingSeconds! > 0) {
-      _timer?.cancel();
-      _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-        final now = DateTime.now();
-        // 检查距离上次调用的时间间隔
-        if (_lastTickTime != null) {
-          final difference = now.difference(_lastTickTime!).inSeconds;
-          // 如果间隔超过2秒，说明在后台运行或熄屏，需要补偿
-          if (difference > 2) {
-            _remainingSeconds = _remainingSeconds! - difference;
-          }
-        }
-        _lastTickTime = now;
-
-        if (_remainingSeconds! > 0) {
-          _remainingSeconds = _remainingSeconds! - 1;
-        } else {
-          _timer?.cancel();
-          // 计时器完成时保存记录
-          _saveCompletedRecord();
-        }
-        _isPaused = false;
-        saveToStorage();
-        notifyListeners();
-      });
-    }
-  }
-
-  // 修改：保存完成的记录，防止重复保存
-  void _saveCompletedRecord() {
-    if (_startTime != null && _selectedDuration != null) {
-      final endTime = DateTime.now();
-      final actualDurationMinutes =
-          (_selectedDuration! * 60 - (_remainingSeconds ?? 0)) ~/ 60;
-
-      // 只有当实际专注时间大于0时才保存记录，避免重复保存
-      if (actualDurationMinutes > 0) {
-        saveFocusRecord(
-          startTime: _startTime!,
-          endTime: endTime,
-          plannedDuration: _selectedDuration!,
-          actualDuration: actualDurationMinutes,
-          pauseCount: _pauseCount,
-          exitCount: _exitCount,
-        );
-      }
-    }
   }
 
   void pauseTimer() {
@@ -248,6 +197,16 @@ class TimerManager with ChangeNotifier {
     _startTime = null;
     saveToStorage();
     notifyListeners();
+  }
+
+  // 新增：获取专注记录
+  Future<List<Map<String, dynamic>>> getFocusRecords() async {
+    final prefs = await SharedPreferences.getInstance();
+    final recordsString = prefs.getString(_focusRecordsKey);
+    if (recordsString != null) {
+      return List<Map<String, dynamic>>.from(json.decode(recordsString));
+    }
+    return [];
   }
 
   // 修改：处理退出计数逻辑
