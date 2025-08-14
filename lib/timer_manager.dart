@@ -129,6 +129,7 @@ class TimerManager with ChangeNotifier {
     if (_remainingSeconds != null && _remainingSeconds! > 0) {
       _timer?.cancel();
       _startTimerPeriodic();
+      notifyListeners();
     }
   }
 

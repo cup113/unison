@@ -76,8 +76,6 @@ class _FocusTimerPageState extends State<FocusTimerPage>
   Widget _buildTimerCompleteDialog(
       BuildContext context, Todo? activeTodo, int actualDuration) {
     // 在这里定义 controllers，这样它们在对话框打开期间保持不变
-    final durationController =
-        TextEditingController(text: actualDuration.toString());
     int adjustedProgress = activeTodo?.progress ?? 0;
     int adjustedDuration = actualDuration;
 
@@ -85,8 +83,7 @@ class _FocusTimerPageState extends State<FocusTimerPage>
       builder: (context, setState) {
         return AlertDialog(
           title: const Text('专注完成'),
-          content: _buildDialogContent(activeTodo, durationController,
-              adjustedProgress, adjustedDuration, setState),
+          content: _buildDialogContent(activeTodo, adjustedDuration),
           actions: [
             TextButton(
               onPressed: () async {
@@ -109,34 +106,44 @@ class _FocusTimerPageState extends State<FocusTimerPage>
     );
   }
 
-  Widget _buildDialogContent(
-      Todo? activeTodo,
-      TextEditingController durationController,
-      int adjustedProgress,
-      int adjustedDuration,
-      StateSetter setState) {
-    return SingleChildScrollView(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('恭喜你完成专注任务！'),
-          const SizedBox(height: 16),
-          if (activeTodo != null) ...[
-            Text('任务: ${activeTodo.title}'),
-            const SizedBox(height: 8),
-            _buildDurationInput(durationController, adjustedDuration, setState),
-            const SizedBox(height: 8),
-            _buildProgressSlider(adjustedProgress, setState),
-          ] else
-            const Text('未选择任务'),
-        ],
-      ),
+  Widget _buildDialogContent(Todo? activeTodo, int actualDuration) {
+    // 使用 StatefulBuilder 来管理对话框内的状态
+    return StatefulBuilder(
+      builder: (context, setState) {
+        int adjustedProgress = activeTodo?.progress ?? 0;
+        int adjustedDuration = actualDuration;
+
+        return SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('恭喜你完成专注任务！'),
+              const SizedBox(height: 16),
+              if (activeTodo != null) ...[
+                Text('任务: ${activeTodo.title}'),
+                const SizedBox(height: 8),
+                _buildDurationInput((value) {
+                  setState(() {
+                    adjustedDuration = value;
+                  });
+                }, adjustedDuration),
+                const SizedBox(height: 8),
+                _buildProgressSlider((value) {
+                  setState(() {
+                    adjustedProgress = value;
+                  });
+                }, adjustedProgress),
+              ] else
+                const Text('未选择任务'),
+            ],
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildDurationInput(TextEditingController controller,
-      int adjustedDuration, StateSetter setState) {
+  Widget _buildDurationInput(Function(int) onChanged, int adjustedDuration) {
     return Row(
       children: [
         const Text('实际专注时间:'),
@@ -145,15 +152,15 @@ class _FocusTimerPageState extends State<FocusTimerPage>
           width: 100,
           child: TextField(
             keyboardType: TextInputType.number,
-            controller: controller,
+            controller:
+                TextEditingController(text: adjustedDuration.toString()),
             decoration: const InputDecoration(
               suffixText: '分钟',
               border: OutlineInputBorder(),
             ),
             onChanged: (value) {
-              setState(() {
-                adjustedDuration = int.tryParse(value) ?? adjustedDuration;
-              });
+              final parsedValue = int.tryParse(value) ?? adjustedDuration;
+              onChanged(parsedValue);
             },
           ),
         ),
@@ -161,7 +168,7 @@ class _FocusTimerPageState extends State<FocusTimerPage>
     );
   }
 
-  Widget _buildProgressSlider(int adjustedProgress, StateSetter setState) {
+  Widget _buildProgressSlider(Function(int) onChanged, int adjustedProgress) {
     return Row(
       children: [
         const Text('任务进度:'),
@@ -174,9 +181,7 @@ class _FocusTimerPageState extends State<FocusTimerPage>
             divisions: 10,
             label: adjustedProgress.toString(),
             onChanged: (value) {
-              setState(() {
-                adjustedProgress = value.toInt();
-              });
+              onChanged(value.toInt());
             },
           ),
         ),

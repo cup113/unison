@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:unison/timer_manager.dart';
 import 'app_state_manager.dart';
 import 'active_todo_view.dart';
 
@@ -49,10 +50,7 @@ class _TimerViewState extends State<TimerView> {
 
     // 检查计时器是否完成
     if (widget.remainingSeconds <= 0 && timerManager.isTimerActive == false) {
-      // 延迟调用完成回调，确保UI更新
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        widget.onTimerComplete();
-      });
+      widget.onTimerComplete();
     }
 
     return LayoutBuilder(
@@ -160,7 +158,7 @@ class _TimerViewState extends State<TimerView> {
     );
   }
 
-  Widget _buildTimerControls(timerManager) {
+  Widget _buildTimerControls(TimerManager timerManager) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -171,7 +169,7 @@ class _TimerViewState extends State<TimerView> {
     );
   }
 
-  Widget _buildPauseResumeButton(timerManager) {
+  Widget _buildPauseResumeButton(TimerManager timerManager) {
     return ElevatedButton(
       onPressed: () {
         if (timerManager.isTimerActive) {
