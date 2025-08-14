@@ -1,21 +1,30 @@
 {
+	"scripts": {
+		"build": "tsc -p ./tsconfig.json",
+		"start": "node ./dist/main.mjs"
+	},
 	"dependencies": {
 		"@ts-rest/core": "^3.52.1",
+		"@ts-rest/express": "^3.52.1",
 		"body-parser": "^2.2.0",
 		"compression": "^1.8.1",
 		"connect-timeout": "^1.9.1",
 		"dayjs": "^1.11.13",
+		"express": "^4.21.2",
 		"express-async-errors": "^3.1.1",
 		"http-errors": "^2.0.0",
 		"pocketbase": "^0.26.2",
 		"valibot": "^1.1.0",
 		"winston": "^3.17.0",
-		"winston-daily-rotate-file": "^5.0.0"
+		"winston-daily-rotate-file": "^5.0.0",
+		"zod": "^3.25.76"
 	},
 	"devDependencies": {
 		"@types/body-parser": "^1.19.6",
+		"@types/compression": "^1.8.1",
 		"@types/connect-timeout": "^1.9.0",
 		"@types/express": "^5.0.3",
+		"@types/http-errors": "^2.0.5",
 		"typescript": "^5.9.2"
 	}
 }

@@ -33,7 +33,7 @@ def general_popen(
 
 
 def build_ts():
-    return general_popen(pnpm, "run", "build", cwd=ROOT / "server")
+    return general_popen(pnpm, "run", "build")
 
 
 def run_pocket_base():
@@ -44,7 +44,7 @@ def run_pocket_base():
             "--db",
             ROOT / "db" / "pb_data" / "data.db",
             "--out",
-            ROOT / "types" / "pocketbase-types.d.ts",
+            ROOT / "src" / "types" / "pocketbase-types.d.ts",
         )
     )
     return general_popen(
@@ -65,8 +65,7 @@ def run_express_server():
     return (
         pocket_base,
         general_popen(
-            "node",
-            ROOT / "server" / "dist" / "main.mjs",
+            pnpm, "run", "start",
             env_add={
                 "NODE_ENV": "development",
                 "POCKETBASE_URL": "http://localhost:4133/",

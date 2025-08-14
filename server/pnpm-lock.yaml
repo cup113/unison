@@ -10,7 +10,10 @@ importers:
     dependencies:
       '@ts-rest/core':
         specifier: ^3.52.1
-        version: 3.52.1(@types/node@24.2.1)
+        version: 3.52.1(@types/node@24.2.1)(zod@3.25.76)
+      '@ts-rest/express':
+        specifier: ^3.52.1
+        version: 3.52.1(@ts-rest/core@3.52.1(@types/node@24.2.1)(zod@3.25.76))(express@4.21.2)(zod@3.25.76)
       body-parser:
         specifier: ^2.2.0
         version: 2.2.0
@@ -23,6 +26,9 @@ importers:
       dayjs:
         specifier: ^1.11.13
         version: 1.11.13
+      express:
+        specifier: ^4.21.2
+        version: 4.21.2
       express-async-errors:
         specifier: ^3.1.1
         version: 3.1.1(express@4.21.2)
@@ -41,16 +47,25 @@ importers:
       winston-daily-rotate-file:
         specifier: ^5.0.0
         version: 5.0.0(winston@3.17.0)
+      zod:
+        specifier: ^3.25.76
+        version: 3.25.76
     devDependencies:
       '@types/body-parser':
         specifier: ^1.19.6
         version: 1.19.6
+      '@types/compression':
+        specifier: ^1.8.1
+        version: 1.8.1
       '@types/connect-timeout':
         specifier: ^1.9.0
         version: 1.9.0
       '@types/express':
         specifier: ^5.0.3
         version: 5.0.3
+      '@types/http-errors':
+        specifier: ^2.0.5
+        version: 2.0.5
       typescript:
         specifier: ^5.9.2
         version: 5.9.2
@@ -75,8 +90,21 @@ packages:
       zod:
         optional: true
 
+  '@ts-rest/express@3.52.1':
+    resolution: {integrity: sha512-ttVynyJSWYnVzn7FazSFvShD5j3Lq1JsIhSKereV2Z51zxWEQwo35CpCO3Q8rELzkfD9CYoT6eNSBJRlJLogIw==}
+    peerDependencies:
+      '@ts-rest/core': ~3.52.0
+      express: ^4.0.0
+      zod: ^3.22.3
+    peerDependenciesMeta:
+      zod:
+        optional: true
+
   '@types/body-parser@1.19.6':
     resolution: {integrity: sha512-HLFeCYgz89uk22N5Qg3dvGvsv46B8GLvKKo1zKG4NybA8U2DiEO3w9lqGg29t/tfLRJpJ6iQxnVw4OnB7MoM9g==}
+
+  '@types/compression@1.8.1':
+    resolution: {integrity: sha512-kCFuWS0ebDbmxs0AXYn6e2r2nrGAb5KwQhknjSPSPgJcGd8+HVSILlUyFhGqML2gk39HcG7D1ydW9/qpYkN00Q==}
 
   '@types/connect-timeout@1.9.0':
     resolution: {integrity: sha512-tKAbro0/ATFeaSVa/N3Gv981+7KbuNQjoZEW8uI4NEdyxquWnylC5UTXwIOc2HD2q22ZjLr8H5YVKZL2+pGBGw==}
@@ -590,6 +618,9 @@ packages:
     resolution: {integrity: sha512-DLiFIXYC5fMPxaRg832S6F5mJYvePtmO5G9v9IgUFPhXm9/GkXarH/TUrBAVzhTCzAj9anE/+GjrgXp/54nOgw==}
     engines: {node: '>= 12.0.0'}
 
+  zod@3.25.76:
+    resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
+
 snapshots:
 
   '@colors/colors@1.6.0': {}
@@ -600,13 +631,26 @@ snapshots:
       enabled: 2.0.0
       kuler: 2.0.0
 
-  '@ts-rest/core@3.52.1(@types/node@24.2.1)':
+  '@ts-rest/core@3.52.1(@types/node@24.2.1)(zod@3.25.76)':
     optionalDependencies:
       '@types/node': 24.2.1
+      zod: 3.25.76
+
+  '@ts-rest/express@3.52.1(@ts-rest/core@3.52.1(@types/node@24.2.1)(zod@3.25.76))(express@4.21.2)(zod@3.25.76)':
+    dependencies:
+      '@ts-rest/core': 3.52.1(@types/node@24.2.1)(zod@3.25.76)
+      express: 4.21.2
+    optionalDependencies:
+      zod: 3.25.76
 
   '@types/body-parser@1.19.6':
     dependencies:
       '@types/connect': 3.4.38
+      '@types/node': 24.2.1
+
+  '@types/compression@1.8.1':
+    dependencies:
+      '@types/express': 5.0.3
       '@types/node': 24.2.1
 
   '@types/connect-timeout@1.9.0':
@@ -1173,3 +1217,5 @@ snapshots:
       stack-trace: 0.0.10
       triple-beam: 1.4.1
       winston-transport: 4.9.0
+
+  zod@3.25.76: {}
