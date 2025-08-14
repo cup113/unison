@@ -124,6 +124,27 @@ class TodoItemDisplayWidget extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 8),
+        // 显示已专注时间
+        if (todo.focusedTime > 0) ...[
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 6,
+              vertical: 2,
+            ),
+            decoration: BoxDecoration(
+              color: Colors.blue.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              '专注: ${todo.focusedTime}分钟',
+              style: const TextStyle(
+                fontSize: 12,
+                color: Colors.blue,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+        ],
         if (todo.category.isNotEmpty) ...[
           Container(
             padding: const EdgeInsets.symmetric(

@@ -61,13 +61,26 @@ class TimerView extends StatelessWidget {
                       SizedBox(
                         width: 250,
                         height: 250,
-                        child: CircularProgressIndicator(
-                          value: progress,
-                          strokeWidth: 12,
-                          backgroundColor: Colors.grey[300],
-                          valueColor: const AlwaysStoppedAnimation<Color>(
-                            Colors.blue,
+                        child: TweenAnimationBuilder<double>(
+                          tween: Tween<double>(
+                            begin: 0,
+                            end: progress,
                           ),
+                          duration: const Duration(milliseconds: 300),
+                          builder: (context, value, child) {
+                            return CircularProgressIndicator(
+                              value: value,
+                              strokeWidth: 12,
+                              backgroundColor: Colors.grey[300],
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                value < 0.3
+                                    ? Colors.red
+                                    : value < 0.7
+                                        ? Colors.orange
+                                        : Colors.green,
+                              ),
+                            );
+                          },
                         ),
                       ),
                       // 中心倒计时文本
@@ -76,6 +89,8 @@ class TimerView extends StatelessWidget {
                         children: [
                           Text(
                             '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}',
+                            key: ValueKey(
+                                '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}'),
                             style: const TextStyle(
                               fontSize: 56,
                               fontWeight: FontWeight.bold,
@@ -83,7 +98,7 @@ class TimerView extends StatelessWidget {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            '${(selectedDuration * 60 - remainingSeconds) ~/ 60}/${selectedDuration}分钟',
+                            '${(selectedDuration * 60 - remainingSeconds) ~/ 60}/$selectedDuration 分钟',
                             style: const TextStyle(
                               fontSize: 18,
                               color: Colors.grey,
@@ -117,12 +132,30 @@ class TimerView extends StatelessWidget {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
+                      elevation: 4,
+                      animationDuration: const Duration(milliseconds: 200),
                     ),
                     child: Text(isPaused ? '继续' : '暂停'),
                   ),
                   const SizedBox(width: 20),
                   OutlinedButton(
-                    onPressed: timerManager.cancelTimer,
+                    onPressed: () {
+                      timerManager.cancelTimer();
+                      // 添加取消操作的反馈
+                      if (context is Element) {
+                        final scaffold =
+                            context.findAncestorWidgetOfExactType<Scaffold>();
+                        if (scaffold != null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('计时器已取消'),
+                              duration: Duration(seconds: 1),
+                              backgroundColor: Colors.orange,
+                            ),
+                          );
+                        }
+                      }
+                    },
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 32,
@@ -132,12 +165,13 @@ class TimerView extends StatelessWidget {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
+                      side: const BorderSide(width: 2, color: Colors.red),
                     ),
                     child: const Text('取消'),
                   ),
                 ],
               ),
-              const SizedBox(height: 30),
+              const SizedBox(height: 20),
               const Divider(height: 1, thickness: 1),
               const SizedBox(height: 20),
               ActiveTodoView(todoManager: todoManager),

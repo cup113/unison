@@ -99,5 +99,14 @@ class _TodoListWidgetState extends State<TodoListWidget> {
       _isAddingTodo = false;
     });
     widget.onTodoChanged();
+
+    // 添加操作成功的提示
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('任务列表已更新'),
+        duration: Duration(seconds: 1),
+        backgroundColor: Colors.green,
+      ),
+    );
   }
 }

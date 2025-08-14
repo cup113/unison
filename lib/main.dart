@@ -61,6 +61,11 @@ class _FocusTimerPageState extends State<FocusTimerPage>
       todoManager: _todoManager,
     );
 
+    // 添加监听器以重建UI
+    _timerManager.addListener(() {
+      setState(() {});
+    });
+
     WidgetsBinding.instance.addObserver(this);
 
     setState(() {
@@ -79,23 +84,80 @@ class _FocusTimerPageState extends State<FocusTimerPage>
   void _showTimerCompleteDialog() {
     final activeTodo = _todoManager.getActiveTodo(includeCompleted: true);
     int actualDuration = _timerManager.selectedDuration ?? 0;
-    int adjustedProgress = activeTodo?.progress ?? 0;
-    int adjustedDuration = actualDuration;
 
     showDialog(
       context: context,
       barrierDismissible: false, // 用户必须确认对话框
       builder: (BuildContext context) {
+        // 在这里定义 controllers，这样它们在对话框打开期间保持不变
+        final durationController =
+            TextEditingController(text: actualDuration.toString());
+        int adjustedProgress = activeTodo?.progress ?? 0;
+        int adjustedDuration = actualDuration;
+
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
               title: const Text('专注完成'),
-              content: _buildDialogContent(
-                activeTodo,
-                actualDuration,
-                adjustedProgress,
-                adjustedDuration,
-                setState,
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('恭喜你完成专注任务！'),
+                    const SizedBox(height: 16),
+                    if (activeTodo != null) ...[
+                      Text('任务: ${activeTodo.title}'),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const Text('实际专注时间:'),
+                          const SizedBox(width: 8),
+                          SizedBox(
+                            width: 100,
+                            child: TextField(
+                              keyboardType: TextInputType.number,
+                              controller: durationController,
+                              decoration: const InputDecoration(
+                                suffixText: '分钟',
+                                border: OutlineInputBorder(),
+                              ),
+                              onChanged: (value) {
+                                setState(() {
+                                  adjustedDuration =
+                                      int.tryParse(value) ?? adjustedDuration;
+                                });
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const Text('任务进度:'),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Slider(
+                              value: adjustedProgress.toDouble(),
+                              min: 0,
+                              max: 10,
+                              divisions: 10,
+                              label: adjustedProgress.toString(),
+                              onChanged: (value) {
+                                setState(() {
+                                  adjustedProgress = value.toInt();
+                                });
+                              },
+                            ),
+                          ),
+                          Text('$adjustedProgress/10'),
+                        ],
+                      ),
+                    ] else
+                      const Text('未选择任务'),
+                  ],
+                ),
               ),
               actions: [
                 TextButton(
@@ -121,73 +183,6 @@ class _FocusTimerPageState extends State<FocusTimerPage>
     );
   }
 
-  Widget _buildDialogContent(
-    Todo? activeTodo,
-    int actualDuration,
-    int adjustedProgress,
-    int adjustedDuration,
-    StateSetter setState,
-  ) {
-    return SingleChildScrollView(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('恭喜你完成专注任务！'),
-          const SizedBox(height: 16),
-          if (activeTodo != null) ...[
-            Text('任务: ${activeTodo.title}'),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                const Text('实际专注时间:'),
-                const SizedBox(width: 8),
-                DropdownButton<int>(
-                  value: adjustedDuration,
-                  items: List.generate(
-                    11, // 最多可增加10分钟
-                    (index) => DropdownMenuItem(
-                      value: actualDuration + index,
-                      child: Text('${actualDuration + index} 分钟'),
-                    ),
-                  ),
-                  onChanged: (value) {
-                    setState(() {
-                      adjustedDuration = value!;
-                    });
-                  },
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                const Text('任务进度:'),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Slider(
-                    value: adjustedProgress.toDouble(),
-                    min: 0,
-                    max: 10,
-                    divisions: 10,
-                    label: adjustedProgress.toString(),
-                    onChanged: (value) {
-                      setState(() {
-                        adjustedProgress = value.toInt();
-                      });
-                    },
-                  ),
-                ),
-                Text('$adjustedProgress/10'),
-              ],
-            ),
-          ] else
-            const Text('未选择任务'),
-        ],
-      ),
-    );
-  }
-
   Future<void> _handleTimerCompletion(
     Todo? activeTodo,
     int actualDuration,
@@ -203,21 +198,32 @@ class _FocusTimerPageState extends State<FocusTimerPage>
       );
     }
 
-    // 保存专注记录
+    // 使用AppStateManager保存专注记录
     if (_timerManager.startTime != null &&
         _timerManager.selectedDuration != null) {
       final endTime = DateTime.now();
-      await _timerManager.saveFocusRecord(
+
+      // 收集需要保存的todo数据
+      List<Todo> todos = [];
+      List<int> progressList = [];
+      List<int> focusedTimeList = [];
+
+      if (activeTodo != null) {
+        todos.add(activeTodo);
+        progressList.add(adjustedProgress);
+        focusedTimeList.add(adjustedDuration);
+      }
+
+      await _appStateManager.saveFocusRecord(
         startTime: _timerManager.startTime!,
         endTime: endTime,
         plannedDuration: _timerManager.selectedDuration!,
         actualDuration: adjustedDuration,
         pauseCount: _timerManager.pauseCount,
         exitCount: _timerManager.exitCount,
-        todoId: activeTodo?.id,
-        todoTitle: activeTodo?.title,
-        todoProgress: adjustedProgress,
-        todoFocusedTime: adjustedDuration,
+        todos: todos.isNotEmpty ? todos : null,
+        progressList: progressList.isNotEmpty ? progressList : null,
+        focusedTimeList: focusedTimeList.isNotEmpty ? focusedTimeList : null,
       );
     }
   }
@@ -262,19 +268,27 @@ class _FocusTimerPageState extends State<FocusTimerPage>
             IconButton(icon: const Icon(Icons.list), onPressed: _showTodoList),
           ],
         ),
-        body: Center(
-          child: _timerManager.remainingSeconds == null
-              ? SetupView(
-                  appStateManager: _appStateManager,
-                )
-              : TimerView(
-                  appStateManager: _appStateManager,
-                  selectedDuration: _timerManager.selectedDuration!,
-                  remainingSeconds: _timerManager.remainingSeconds!,
-                  isPaused: _timerManager.isPaused,
-                  exitCount: _timerManager.exitCount,
-                  onTimerComplete: _showTimerCompleteDialog,
-                ),
+        body: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          switchInCurve: Curves.easeInOut,
+          switchOutCurve: Curves.easeInOut,
+          child: Center(
+            // 修改这里：使用更明确的key来区分两种状态
+            key: ValueKey<String>(
+                _timerManager.remainingSeconds == null ? 'setup' : 'timer'),
+            child: _timerManager.remainingSeconds == null
+                ? SetupView(
+                    appStateManager: _appStateManager,
+                  )
+                : TimerView(
+                    appStateManager: _appStateManager,
+                    selectedDuration: _timerManager.selectedDuration!,
+                    remainingSeconds: _timerManager.remainingSeconds!,
+                    isPaused: _timerManager.isPaused,
+                    exitCount: _timerManager.exitCount,
+                    onTimerComplete: _showTimerCompleteDialog,
+                  ),
+          ),
         ),
       ),
     );
@@ -284,7 +298,7 @@ class _FocusTimerPageState extends State<FocusTimerPage>
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => StatisticsPage(timerManager: _timerManager),
+        builder: (context) => StatisticsPage(appStateManager: _appStateManager),
       ),
     );
   }

@@ -45,7 +45,7 @@ class SetupView extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: Text('$minutes分钟'),
+                child: Text('${minutes.toString().padLeft(2, '0')}:00'),
               );
             }).toList(),
           ),

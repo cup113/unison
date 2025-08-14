@@ -4,14 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class TimerManager with ChangeNotifier {
-  static const List<int> presetDurations = [
-    5,
-    15,
-    25,
-    40,
-    60,
-    90
-  ]; // in minutes
+  static const List<int> presetDurations = [25, 40, 60, 90]; // in minutes
 
   int? _selectedDuration;
   int? _remainingSeconds;
@@ -21,9 +14,9 @@ class TimerManager with ChangeNotifier {
   DateTime? _lastExitTime; // 记录上次退出时间
   int _pauseCount = 0; // 暂停次数
   DateTime? _startTime; // 开始时间
-  DateTime? _lastTickTime; // 记录上次计时器调用时间
+  DateTime? _lastTickTime; // 上次计时时间
   static const String _timerStateKey = 'timer_state_v2';
-  static const String _focusRecordsKey = 'focus_records';
+  static const String _focusRecordsKey = 'focus_records_v2';
 
   int? get selectedDuration => _selectedDuration;
   int? get remainingSeconds => _remainingSeconds;
@@ -84,7 +77,7 @@ class TimerManager with ChangeNotifier {
     }
   }
 
-  // 新增：保存专注记录
+  // 修改：保存专注记录，支持多个todo关联
   Future<void> saveFocusRecord({
     required DateTime startTime,
     required DateTime endTime,
@@ -92,10 +85,7 @@ class TimerManager with ChangeNotifier {
     required int actualDuration, // 分钟
     required int pauseCount,
     required int exitCount,
-    String? todoId,
-    String? todoTitle,
-    int? todoProgress,
-    int? todoFocusedTime,
+    List<Map<String, dynamic>>? todoData, // 修改为支持多个todo
   }) async {
     final prefs = await SharedPreferences.getInstance();
 
@@ -113,10 +103,7 @@ class TimerManager with ChangeNotifier {
       'actualDuration': actualDuration,
       'pauseCount': pauseCount,
       'exitCount': exitCount,
-      if (todoId != null) 'todoId': todoId,
-      if (todoTitle != null) 'todoTitle': todoTitle,
-      if (todoProgress != null) 'todoProgress': todoProgress,
-      if (todoFocusedTime != null) 'todoFocusedTime': todoFocusedTime,
+      if (todoData != null) 'todoData': todoData,
     };
 
     records.add(newRecord);
@@ -203,9 +190,25 @@ class TimerManager with ChangeNotifier {
     }
   }
 
-  // 新增：保存完成的记录
+  // 修改：保存完成的记录，防止重复保存
   void _saveCompletedRecord() {
-    notifyListeners();
+    if (_startTime != null && _selectedDuration != null) {
+      final endTime = DateTime.now();
+      final actualDurationMinutes =
+          (_selectedDuration! * 60 - (_remainingSeconds ?? 0)) ~/ 60;
+
+      // 只有当实际专注时间大于0时才保存记录，避免重复保存
+      if (actualDurationMinutes > 0) {
+        saveFocusRecord(
+          startTime: _startTime!,
+          endTime: endTime,
+          plannedDuration: _selectedDuration!,
+          actualDuration: actualDurationMinutes,
+          pauseCount: _pauseCount,
+          exitCount: _exitCount,
+        );
+      }
+    }
   }
 
   void pauseTimer() {
@@ -225,21 +228,24 @@ class TimerManager with ChangeNotifier {
       final actualDurationMinutes = (_selectedDuration! * 60 -
               (_remainingSeconds ?? _selectedDuration! * 60)) ~/
           60;
-      saveFocusRecord(
-        startTime: _startTime!,
-        endTime: endTime,
-        plannedDuration: _selectedDuration!,
-        actualDuration: actualDurationMinutes,
-        pauseCount: _pauseCount,
-        exitCount: _exitCount,
-      );
+
+      // 只有当实际专注时间大于0时才保存记录
+      if (actualDurationMinutes > 0) {
+        saveFocusRecord(
+          startTime: _startTime!,
+          endTime: endTime,
+          plannedDuration: _selectedDuration!,
+          actualDuration: actualDurationMinutes,
+          pauseCount: _pauseCount,
+          exitCount: _exitCount,
+        );
+      }
     }
 
     _selectedDuration = null;
     _remainingSeconds = null;
     _isPaused = false;
     _startTime = null;
-    _lastTickTime = null; // 清除上次调用时间
     saveToStorage();
     notifyListeners();
   }
