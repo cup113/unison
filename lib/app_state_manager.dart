@@ -6,10 +6,13 @@ import 'todo_manager.dart';
 class AppStateManager with ChangeNotifier {
   static const List<int> presetDurations = [
     5,
+    10,
     15,
-    25,
+    20,
+    30,
     40,
     60,
+    75,
     90
   ]; // in minutes
 

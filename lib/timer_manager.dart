@@ -4,8 +4,6 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class TimerManager with ChangeNotifier {
-  static const List<int> presetDurations = [25, 40, 60, 90]; // in minutes
-
   int? _selectedDuration;
   int? _remainingSeconds;
   Timer? _timer;
@@ -168,7 +166,7 @@ class TimerManager with ChangeNotifier {
     notifyListeners();
   }
 
-  void cancelTimer() {
+  void cancelTimer(bool finished) {
     _timer?.cancel();
 
     // 如果计时器被取消且已经开始，则保存记录
@@ -179,7 +177,7 @@ class TimerManager with ChangeNotifier {
           60;
 
       // 只有当实际专注时间大于0时才保存记录
-      if (actualDurationMinutes > 0) {
+      if (!finished && actualDurationMinutes > 0) {
         saveFocusRecord(
           startTime: _startTime!,
           endTime: endTime,

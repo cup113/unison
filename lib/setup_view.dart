@@ -37,8 +37,8 @@ class SetupView extends StatelessWidget {
                     appStateManager.timerManager.startTimer(minutes),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 32,
-                    vertical: 20,
+                    horizontal: 16,
+                    vertical: 16,
                   ),
                   textStyle: const TextStyle(fontSize: 20),
                   shape: RoundedRectangleBorder(

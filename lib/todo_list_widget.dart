@@ -21,6 +21,22 @@ class _TodoListWidgetState extends State<TodoListWidget> {
   bool _isAddingTodo = false;
 
   @override
+  void initState() {
+    super.initState();
+    widget.todoManager.addListener(_onTodoChanged);
+  }
+
+  @override
+  void dispose() {
+    widget.todoManager.removeListener(_onTodoChanged);
+    super.dispose();
+  }
+
+  void _onTodoChanged() {
+    setState(() {});
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(16.0),

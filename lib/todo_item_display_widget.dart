@@ -3,7 +3,7 @@ import 'todo.dart';
 import 'todo_manager.dart';
 import 'todo_editor_widget.dart';
 
-class TodoItemDisplayWidget extends StatelessWidget {
+class TodoItemDisplayWidget extends StatefulWidget {
   final Todo todo;
   final TodoManager todoManager;
   final VoidCallback onTodoChanged;
@@ -15,6 +15,11 @@ class TodoItemDisplayWidget extends StatelessWidget {
     required this.onTodoChanged,
   });
 
+  @override
+  State<TodoItemDisplayWidget> createState() => _TodoItemDisplayWidgetState();
+}
+
+class _TodoItemDisplayWidgetState extends State<TodoItemDisplayWidget> {
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -39,24 +44,25 @@ class TodoItemDisplayWidget extends StatelessWidget {
       children: [
         Expanded(
           child: Text(
-            todo.title,
+            widget.todo.title,
             style: TextStyle(
-              decoration: todo.isCompleted
+              decoration: widget.todo.isCompleted
                   ? TextDecoration.lineThrough
                   : TextDecoration.none,
-              color: todo.isCompleted ? Colors.grey : Colors.black,
+              color: widget.todo.isCompleted ? Colors.grey : Colors.black,
               fontWeight: FontWeight.bold,
             ),
           ),
         ),
         IconButton(
           icon: Icon(
-            todo.isActive ? Icons.star : Icons.star_border,
-            color: todo.isActive ? Colors.orange : null,
+            widget.todo.isActive ? Icons.star : Icons.star_border,
+            color: widget.todo.isActive ? Colors.orange : null,
           ),
           onPressed: () {
-            todoManager.toggleActive(todo.id);
-            onTodoChanged();
+            widget.todoManager.toggleActive(widget.todo.id);
+            widget.onTodoChanged();
+            setState(() {}); // 重新构建以更新图标状态
           },
         ),
         IconButton(
@@ -69,8 +75,8 @@ class TodoItemDisplayWidget extends StatelessWidget {
         IconButton(
           icon: const Icon(Icons.delete),
           onPressed: () {
-            todoManager.removeTodo(todo.id);
-            onTodoChanged();
+            widget.todoManager.removeTodo(widget.todo.id);
+            widget.onTodoChanged();
           },
         ),
       ],
@@ -86,11 +92,11 @@ class TodoItemDisplayWidget extends StatelessWidget {
           content: SizedBox(
             width: 300,
             child: TodoEditorWidget(
-              todo: todo,
-              todoManager: todoManager,
+              todo: widget.todo,
+              todoManager: widget.todoManager,
               onTodoChanged: () {
                 Navigator.of(context).pop();
-                onTodoChanged();
+                widget.onTodoChanged();
               },
               onCancel: () {
                 Navigator.of(context).pop();
@@ -105,27 +111,8 @@ class TodoItemDisplayWidget extends StatelessWidget {
   Widget _buildInfoRow() {
     return Row(
       children: [
-        // 显示进度值
-        Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 6,
-            vertical: 2,
-          ),
-          decoration: BoxDecoration(
-            color: Colors.green.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: Text(
-            '进度: ${todo.progress}/10',
-            style: const TextStyle(
-              fontSize: 12,
-              color: Colors.green,
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
         // 显示已专注时间
-        if (todo.focusedTime > 0) ...[
+        if (widget.todo.focusedTime > 0) ...[
           Container(
             padding: const EdgeInsets.symmetric(
               horizontal: 6,
@@ -135,17 +122,24 @@ class TodoItemDisplayWidget extends StatelessWidget {
               color: Colors.blue.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(4),
             ),
-            child: Text(
-              '专注: ${todo.focusedTime}分钟',
-              style: const TextStyle(
-                fontSize: 12,
-                color: Colors.blue,
-              ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.timer, size: 12, color: Colors.blue),
+                const SizedBox(width: 4),
+                Text(
+                  '${widget.todo.focusedTime}分钟',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.blue,
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(width: 8),
         ],
-        if (todo.category.isNotEmpty) ...[
+        if (widget.todo.category.isNotEmpty) ...[
           Container(
             padding: const EdgeInsets.symmetric(
               horizontal: 6,
@@ -155,17 +149,24 @@ class TodoItemDisplayWidget extends StatelessWidget {
               color: Colors.blueGrey.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(4),
             ),
-            child: Text(
-              todo.category,
-              style: const TextStyle(
-                fontSize: 12,
-                color: Colors.blueGrey,
-              ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.category, size: 12, color: Colors.blueGrey),
+                const SizedBox(width: 4),
+                Text(
+                  widget.todo.category,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.blueGrey,
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(width: 8),
         ],
-        if (todo.estimatedTime > 0) ...[
+        if (widget.todo.estimatedTime > 0) ...[
           Container(
             padding: const EdgeInsets.symmetric(
               horizontal: 6,
@@ -175,12 +176,19 @@ class TodoItemDisplayWidget extends StatelessWidget {
               color: Colors.deepOrange.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(4),
             ),
-            child: Text(
-              '${todo.estimatedTime}分钟',
-              style: const TextStyle(
-                fontSize: 12,
-                color: Colors.deepOrange,
-              ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.schedule, size: 12, color: Colors.deepOrange),
+                const SizedBox(width: 4),
+                Text(
+                  '${widget.todo.estimatedTime}分钟',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.deepOrange,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -201,19 +209,19 @@ class TodoItemDisplayWidget extends StatelessWidget {
               overlayShape: const RoundSliderOverlayShape(overlayRadius: 16),
             ),
             child: Slider(
-              value: todo.progress.toDouble(),
+              value: widget.todo.progress.toDouble(),
               min: 0,
               max: 10,
               divisions: 10,
-              label: todo.progress.toString(),
+              label: widget.todo.progress.toString(),
               onChanged: (value) {
-                todoManager.setProgress(todo.id, value.toInt());
-                onTodoChanged();
+                widget.todoManager.setProgress(widget.todo.id, value.toInt());
+                widget.onTodoChanged();
               },
             ),
           ),
         ),
-        Text('${todo.progress}/10'),
+        Text('${widget.todo.progress}/10'),
       ],
     );
   }
