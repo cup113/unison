@@ -100,6 +100,61 @@ class _FocusTimerPageState extends State<FocusTimerPage>
               },
               child: const Text('确认'),
             ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                // 添加时间并继续计时
+                _timerManager.addTime(1);
+                if (!_timerManager.isTimerActive && !_timerManager.isPaused) {
+                  _timerManager.resumeTimer();
+                }
+              },
+              child: const Text('+1分钟'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                // 添加时间并继续计时
+                _timerManager.addTime(2);
+                if (!_timerManager.isTimerActive && !_timerManager.isPaused) {
+                  _timerManager.resumeTimer();
+                }
+              },
+              child: const Text('+2分钟'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                // 添加时间并继续计时
+                _timerManager.addTime(5);
+                if (!_timerManager.isTimerActive && !_timerManager.isPaused) {
+                  _timerManager.resumeTimer();
+                }
+              },
+              child: const Text('+5分钟'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                // 添加时间并继续计时
+                _timerManager.addTime(10);
+                if (!_timerManager.isTimerActive && !_timerManager.isPaused) {
+                  _timerManager.resumeTimer();
+                }
+              },
+              child: const Text('+10分钟'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                // 添加时间并继续计时
+                _timerManager.addTime(15);
+                if (!_timerManager.isTimerActive && !_timerManager.isPaused) {
+                  _timerManager.resumeTimer();
+                }
+              },
+              child: const Text('+15分钟'),
+            ),
           ],
         );
       },
@@ -136,6 +191,8 @@ class _FocusTimerPageState extends State<FocusTimerPage>
                 }, adjustedProgress),
               ] else
                 const Text('未选择任务'),
+              const SizedBox(height: 16),
+              const Text('想要继续专注吗？选择加时长度：'),
             ],
           ),
         );

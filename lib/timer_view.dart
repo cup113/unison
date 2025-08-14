@@ -48,9 +48,14 @@ class _TimerViewState extends State<TimerView> {
     final timerManager = widget.appStateManager.timerManager;
     final todoManager = widget.appStateManager.todoManager;
 
-    // 检查计时器是否完成
-    if (widget.remainingSeconds <= 0 && timerManager.isTimerActive == false) {
-      widget.onTimerComplete();
+    // 修改：允许remainingSeconds为负数
+    if (widget.remainingSeconds <= 0 && !timerManager.dialogActive) {
+      // 设置dialogActive为true，防止重复触发
+      timerManager.setDialogActive(true);
+      // 使用addPostFrameCallback避免在build过程中调用setState
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        widget.onTimerComplete();
+      });
     }
 
     return LayoutBuilder(
@@ -89,10 +94,20 @@ class _TimerViewState extends State<TimerView> {
   }
 
   Widget _buildTimerDisplay() {
-    final minutes = (widget.remainingSeconds / 60).floor();
-    final seconds = widget.remainingSeconds % 60;
-    final progress =
-        1.0 - (widget.remainingSeconds / (widget.selectedDuration * 60));
+    // 修改：处理负数时间显示
+    final totalSeconds = widget.remainingSeconds.abs();
+    final minutes = (totalSeconds / 60).floor();
+    final seconds = totalSeconds % 60;
+    final isNegative = widget.remainingSeconds < 0;
+
+    // 修改：处理进度计算，允许负数
+    double progress;
+    if (widget.remainingSeconds >= 0) {
+      progress =
+          1.0 - (widget.remainingSeconds / (widget.selectedDuration * 60));
+    } else {
+      progress = 1.0;
+    }
 
     return Stack(
       alignment: Alignment.center,
@@ -100,7 +115,7 @@ class _TimerViewState extends State<TimerView> {
         // 圆形进度条
         _buildCircularProgress(progress),
         // 中心倒计时文本
-        _buildTimerText(minutes, seconds),
+        _buildTimerText(minutes, seconds, isNegative),
       ],
     );
   }
@@ -133,14 +148,14 @@ class _TimerViewState extends State<TimerView> {
     );
   }
 
-  Widget _buildTimerText(int minutes, int seconds) {
+  Widget _buildTimerText(int minutes, int seconds, bool isNegative) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}',
+          '${isNegative ? '-' : ''}${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}',
           key: ValueKey(
-              '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}'),
+              '${isNegative ? '-' : ''}${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}'),
           style: const TextStyle(
             fontSize: 56,
             fontWeight: FontWeight.bold,
@@ -148,23 +163,34 @@ class _TimerViewState extends State<TimerView> {
         ),
         const SizedBox(height: 8),
         Text(
-          '${(widget.selectedDuration * 60 - widget.remainingSeconds) ~/ 60}/${widget.selectedDuration} 分钟',
-          style: const TextStyle(
-            fontSize: 18,
-            color: Colors.grey,
-          ),
+          '${((widget.selectedDuration * 60 - widget.remainingSeconds) ~/ 60).abs()}/${widget.selectedDuration} 分钟',
+          style: isNegative
+              ? const TextStyle(
+                  fontSize: 18,
+                  color: Colors.red,
+                )
+              : const TextStyle(
+                  fontSize: 18,
+                  color: Colors.grey,
+                ),
         ),
       ],
     );
   }
 
   Widget _buildTimerControls(TimerManager timerManager) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        _buildPauseResumeButton(timerManager),
-        const SizedBox(width: 20),
-        _buildCancelButton(timerManager),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _buildPauseResumeButton(timerManager),
+            const SizedBox(width: 20),
+            _buildCancelButton(timerManager),
+          ],
+        ),
+        const SizedBox(height: 20),
       ],
     );
   }
