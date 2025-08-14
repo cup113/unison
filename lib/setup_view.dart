@@ -1,18 +1,13 @@
 import 'package:flutter/material.dart';
-import 'todo_manager.dart';
-import 'timer_manager.dart';
+import 'app_state_manager.dart';
 import 'active_todo_view.dart';
 
 class SetupView extends StatelessWidget {
-  final TimerManager timerManager;
-  final int exitCount;
-  final TodoManager todoManager;
+  final AppStateManager appStateManager;
 
   const SetupView({
     super.key,
-    required this.timerManager,
-    required this.exitCount,
-    required this.todoManager,
+    required this.appStateManager,
   });
 
   @override
@@ -36,9 +31,10 @@ class SetupView extends StatelessWidget {
             alignment: WrapAlignment.center,
             spacing: 20,
             runSpacing: 20,
-            children: TimerManager.presetDurations.map((minutes) {
+            children: AppStateManager.presetDurations.map((minutes) {
               return ElevatedButton(
-                onPressed: () => timerManager.startTimer(minutes),
+                onPressed: () =>
+                    appStateManager.timerManager.startTimer(minutes),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 32,
@@ -61,7 +57,7 @@ class SetupView extends StatelessWidget {
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 10),
-          ActiveTodoView(todoManager: todoManager),
+          ActiveTodoView(todoManager: appStateManager.todoManager),
         ],
       ),
     );

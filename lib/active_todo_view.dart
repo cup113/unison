@@ -134,14 +134,6 @@ class ActiveTodoView extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 16),
-                const Text(
-                  '任务进度',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                ),
-                const SizedBox(height: 8),
                 Row(
                   children: [
                     Expanded(
@@ -170,7 +162,7 @@ class ActiveTodoView extends StatelessWidget {
                     ),
                     const SizedBox(width: 12),
                     Text(
-                      '${activeTodo.progress}/10',
+                      '进度 ${activeTodo.progress}/10',
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,

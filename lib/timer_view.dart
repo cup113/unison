@@ -1,30 +1,30 @@
 import 'package:flutter/material.dart';
-import 'timer_manager.dart';
-import 'todo_manager.dart';
+import 'app_state_manager.dart';
 import 'active_todo_view.dart';
 
 class TimerView extends StatelessWidget {
-  final TimerManager timerManager;
+  final AppStateManager appStateManager;
   final int selectedDuration;
   final int remainingSeconds;
   final bool isPaused;
   final int exitCount;
-  final TodoManager todoManager;
   final VoidCallback onTimerComplete;
 
   const TimerView({
     super.key,
-    required this.timerManager,
+    required this.appStateManager,
     required this.selectedDuration,
     required this.remainingSeconds,
     required this.isPaused,
     required this.exitCount,
-    required this.todoManager,
     required this.onTimerComplete,
   });
 
   @override
   Widget build(BuildContext context) {
+    final timerManager = appStateManager.timerManager;
+    final todoManager = appStateManager.todoManager;
+
     // 检查计时器是否完成
     if (remainingSeconds <= 0 && timerManager.isTimerActive == false) {
       // 延迟调用完成回调，确保UI更新

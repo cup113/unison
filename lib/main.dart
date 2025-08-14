@@ -7,6 +7,7 @@ import 'timer_manager.dart';
 import 'setup_view.dart';
 import 'timer_view.dart';
 import 'statistics_page.dart';
+import 'app_state_manager.dart';
 
 void main() {
   runApp(const MyApp());
@@ -40,6 +41,7 @@ class _FocusTimerPageState extends State<FocusTimerPage>
     with WidgetsBindingObserver {
   late final TimerManager _timerManager;
   final TodoManager _todoManager = TodoManager();
+  late final AppStateManager _appStateManager;
   bool _isLoading = true;
 
   @override
@@ -53,9 +55,13 @@ class _FocusTimerPageState extends State<FocusTimerPage>
     await _todoManager.loadFromStorage();
     await _timerManager.loadFromStorage();
 
+    // 初始化 AppStateManager
+    _appStateManager = AppStateManager(
+      timerManager: _timerManager,
+      todoManager: _todoManager,
+    );
+
     WidgetsBinding.instance.addObserver(this);
-    _todoManager.addListener(_handleTodoChange);
-    _timerManager.addListener(_handleTimerChange);
 
     setState(() {
       _isLoading = false;
@@ -65,17 +71,9 @@ class _FocusTimerPageState extends State<FocusTimerPage>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _appStateManager.dispose();
     _timerManager.dispose();
-    _todoManager.removeListener(_handleTodoChange);
     super.dispose();
-  }
-
-  void _handleTodoChange() {
-    setState(() {});
-  }
-
-  void _handleTimerChange() {
-    setState(() {});
   }
 
   void _showTimerCompleteDialog() {
@@ -267,17 +265,14 @@ class _FocusTimerPageState extends State<FocusTimerPage>
         body: Center(
           child: _timerManager.remainingSeconds == null
               ? SetupView(
-                  timerManager: _timerManager,
-                  exitCount: _timerManager.exitCount,
-                  todoManager: _todoManager,
+                  appStateManager: _appStateManager,
                 )
               : TimerView(
-                  timerManager: _timerManager,
+                  appStateManager: _appStateManager,
                   selectedDuration: _timerManager.selectedDuration!,
                   remainingSeconds: _timerManager.remainingSeconds!,
                   isPaused: _timerManager.isPaused,
                   exitCount: _timerManager.exitCount,
-                  todoManager: _todoManager,
                   onTimerComplete: _showTimerCompleteDialog,
                 ),
         ),
