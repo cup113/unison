@@ -12,20 +12,20 @@ class ActiveTodoView extends StatelessWidget {
     final activeTodo = todoManager.getActiveTodo(includeCompleted: true);
     if (activeTodo == null) {
       return Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.symmetric(horizontal: 48.0, vertical: 16.0),
         child: Column(
           children: [
             const Text(
               '当前没有选中任务',
-              style: TextStyle(fontWeight: FontWeight.bold),
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
             const SizedBox(height: 8),
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.red[100],
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.red),
+                color: Colors.red[50],
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.red.shade200),
               ),
               child: const Text(
                 '请在右上角的任务列表中选择一个任务作为当前专注任务',
@@ -39,19 +39,19 @@ class ActiveTodoView extends StatelessWidget {
     }
 
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.symmetric(horizontal: 48.0, vertical: 16.0),
       child: Column(
         children: [
-          const Text('当前任务:', style: TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color:
-                  activeTodo.isCompleted ? Colors.grey[300] : Colors.green[100],
-              borderRadius: BorderRadius.circular(8),
+                  activeTodo.isCompleted ? Colors.grey[200] : Colors.green[50],
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: activeTodo.isCompleted ? Colors.grey : Colors.green,
+                color: activeTodo.isCompleted
+                    ? Colors.grey.shade300
+                    : Colors.green.shade200,
               ),
             ),
             child: Column(
@@ -63,7 +63,7 @@ class ActiveTodoView extends StatelessWidget {
                       child: Text(
                         activeTodo.title,
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 18,
                           fontWeight: FontWeight.bold,
                           decoration: activeTodo.isCompleted
                               ? TextDecoration.lineThrough
@@ -74,12 +74,12 @@ class ActiveTodoView extends StatelessWidget {
                     if (activeTodo.isCompleted) ...[
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
+                          horizontal: 10,
+                          vertical: 5,
                         ),
                         decoration: BoxDecoration(
                           color: Colors.green,
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(16),
                         ),
                         child: const Text(
                           '已完成',
@@ -89,18 +89,18 @@ class ActiveTodoView extends StatelessWidget {
                     ],
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 Row(
                   children: [
                     if (activeTodo.category.isNotEmpty) ...[
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
+                          horizontal: 8,
+                          vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.blueGrey.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(4),
+                          color: Colors.blueGrey.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
                           '类别: ${activeTodo.category}',
@@ -110,20 +110,20 @@ class ActiveTodoView extends StatelessWidget {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 12),
                     ],
                     if (activeTodo.estimatedTime > 0) ...[
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
+                          horizontal: 8,
+                          vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.deepOrange.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(4),
+                          color: Colors.deepOrange.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
-                          '预计时间: ${activeTodo.estimatedTime}分钟',
+                          '预计: ${activeTodo.estimatedTime}分钟',
                           style: const TextStyle(
                             fontSize: 12,
                             color: Colors.deepOrange,
@@ -133,24 +133,49 @@ class ActiveTodoView extends StatelessWidget {
                     ],
                   ],
                 ),
+                const SizedBox(height: 16),
+                const Text(
+                  '任务进度',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    const Text('进度:'),
-                    const SizedBox(width: 8),
                     Expanded(
-                      child: Slider(
-                        value: activeTodo.progress.toDouble(),
-                        min: 0,
-                        max: 10,
-                        divisions: 10,
-                        label: activeTodo.progress.toString(),
-                        onChanged: (value) {
-                          todoManager.setProgress(activeTodo.id, value.toInt());
-                        },
+                      child: SliderTheme(
+                        data: SliderTheme.of(context).copyWith(
+                          activeTrackColor: Colors.green,
+                          inactiveTrackColor: Colors.grey[300],
+                          thumbColor: Colors.green,
+                          thumbShape: const RoundSliderThumbShape(
+                              enabledThumbRadius: 8),
+                          overlayShape:
+                              const RoundSliderOverlayShape(overlayRadius: 16),
+                        ),
+                        child: Slider(
+                          value: activeTodo.progress.toDouble(),
+                          min: 0,
+                          max: 10,
+                          divisions: 10,
+                          label: activeTodo.progress.toString(),
+                          onChanged: (value) {
+                            todoManager.setProgress(
+                                activeTodo.id, value.toInt());
+                          },
+                        ),
                       ),
                     ),
-                    Text('${activeTodo.progress}/10'),
+                    const SizedBox(width: 12),
+                    Text(
+                      '${activeTodo.progress}/10',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
                   ],
                 ),
               ],

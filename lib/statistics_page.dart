@@ -149,7 +149,6 @@ class _StatisticsPageState extends State<StatisticsPage> {
     );
   }
 
-// ... existing code ...
   Widget _buildSevenDaysChangeCard() {
     // 计算最近7天的数据
     final now = DateTime.now();
@@ -342,7 +341,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
                 if (todoFocusedTime != null) ...[
                   const SizedBox(width: 8),
                   _buildCompactRecordStat(
-                      '专注', '${todoFocusedTime}分钟', Colors.purple),
+                      '专注', '$todoFocusedTime分钟', Colors.purple),
                 ],
               ],
             ),
