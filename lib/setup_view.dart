@@ -17,27 +17,24 @@ class SetupView extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          const SizedBox(height: 8),
           const Text(
-            '专注计时器',
-            style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+            '选择专注时长开始任务',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 10),
-          const Text(
-            '选择专注时长（分钟）开始任务',
-            style: TextStyle(fontSize: 16, color: Colors.grey),
-          ),
+          const Text("单位：分钟"),
           const SizedBox(height: 40),
           Wrap(
             alignment: WrapAlignment.center,
-            spacing: 20,
-            runSpacing: 20,
+            spacing: 16,
+            runSpacing: 16,
             children: AppStateManager.presetDurations.map((minutes) {
               return ElevatedButton(
                 onPressed: () =>
                     appStateManager.timerManager.startTimer(minutes),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
+                    horizontal: 8,
                     vertical: 16,
                   ),
                   textStyle: const TextStyle(fontSize: 20),
