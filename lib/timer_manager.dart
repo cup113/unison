@@ -83,6 +83,7 @@ class TimerManager with ChangeNotifier {
     required int actualDuration, // 分钟
     required int pauseCount,
     required int exitCount,
+    required bool isCompleted, // 新增：显式标记是否完成
     List<Map<String, dynamic>>? todoData, // 修改为支持多个todo
   }) async {
     final prefs = await SharedPreferences.getInstance();
@@ -101,6 +102,7 @@ class TimerManager with ChangeNotifier {
       'actualDuration': actualDuration,
       'pauseCount': pauseCount,
       'exitCount': exitCount,
+      'isCompleted': isCompleted, // 新增：存储完成状态
       if (todoData != null) 'todoData': todoData,
     };
 
@@ -183,6 +185,7 @@ class TimerManager with ChangeNotifier {
           actualDuration: actualDurationMinutes,
           pauseCount: _pauseCount,
           exitCount: _exitCount,
+          isCompleted: false, // 取消的计时器标记为未完成
         );
       }
     }

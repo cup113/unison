@@ -52,6 +52,7 @@ class AppStateManager with ChangeNotifier {
     required int actualDuration,
     required int pauseCount,
     required int exitCount,
+    required bool isCompleted, // 新增：显式标记是否完成
     List<Todo>? todos, // 支持关联多个todo
     List<int>? progressList, // 对应的进度列表
     List<int>? focusedTimeList, // 对应的专注时间列表
@@ -79,6 +80,7 @@ class AppStateManager with ChangeNotifier {
       actualDuration: actualDuration,
       pauseCount: pauseCount,
       exitCount: exitCount,
+      isCompleted: isCompleted, // 传递完成状态
       todoData: todoData,
     );
   }

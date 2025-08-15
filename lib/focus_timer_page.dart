@@ -69,80 +69,63 @@ class _FocusTimerPageState extends State<FocusTimerPage>
     int actualDuration = (_timerManager.selectedDuration ?? 0) -
         (_timerManager.remainingSeconds ?? 0) ~/ 60;
 
+    // 在这里定义状态变量，确保它们在整个对话框中保持一致
+    int adjustedProgress = activeTodo?.progress ?? 0;
+    int adjustedDuration = actualDuration;
+
     showDialog(
       context: context,
       barrierDismissible: false, // 用户必须确认对话框
       builder: (BuildContext context) {
-        return _buildTimerCompleteDialog(context, activeTodo, actualDuration);
-      },
-    );
-  }
-
-  Widget _buildTimerCompleteDialog(
-      BuildContext context, Todo? activeTodo, int actualDuration) {
-    // 在这里定义 controllers，这样它们在对话框打开期间保持不变
-    int adjustedProgress = activeTodo?.progress ?? 0;
-    int adjustedDuration = actualDuration;
-
-    return StatefulBuilder(
-      builder: (context, setState) {
-        return AlertDialog(
-          title: const Text('专注完成'),
-          content: _buildDialogContent(activeTodo, adjustedDuration),
-          actions: [
-            TextButton(
-              onPressed: () async {
-                await _handleTimerCompletion(
-                  activeTodo,
-                  actualDuration,
-                  adjustedDuration,
-                  adjustedProgress,
-                );
-                if (context.mounted) {
-                  Navigator.of(context).pop();
-                }
-                _timerManager.cancelTimer(true);
-              },
-              child: const Text('确认'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildDialogContent(Todo? activeTodo, int actualDuration) {
-    // 使用 StatefulBuilder 来管理对话框内的状态
-    return StatefulBuilder(
-      builder: (context, setState) {
-        int adjustedProgress = activeTodo?.progress ?? 0;
-        int adjustedDuration = actualDuration;
-
-        return SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('恭喜你完成专注任务！'),
-              const SizedBox(height: 16),
-              if (activeTodo != null) ...[
-                Text('任务: ${activeTodo.title}'),
-                const SizedBox(height: 8),
-                _buildDurationInput((value) {
-                  setState(() {
-                    adjustedDuration = value;
-                  });
-                }, adjustedDuration),
-                const SizedBox(height: 8),
-                _buildProgressSlider((value) {
-                  setState(() {
-                    adjustedProgress = value;
-                  });
-                }, adjustedProgress),
-              ] else
-                const Text('未选择任务'),
-            ],
-          ),
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('专注完成'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('恭喜你完成专注任务！'),
+                    const SizedBox(height: 16),
+                    if (activeTodo != null) ...[
+                      Text('任务: ${activeTodo.title}'),
+                      const SizedBox(height: 8),
+                      _buildDurationInput((value) {
+                        setState(() {
+                          adjustedDuration = value;
+                        });
+                      }, adjustedDuration),
+                      const SizedBox(height: 8),
+                      _buildProgressSlider((value) {
+                        setState(() {
+                          adjustedProgress = value;
+                        });
+                      }, adjustedProgress),
+                    ] else
+                      const Text('未选择任务'),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () async {
+                    await _handleTimerCompletion(
+                      activeTodo,
+                      actualDuration,
+                      adjustedDuration,
+                      adjustedProgress,
+                    );
+                    if (context.mounted) {
+                      Navigator.of(context).pop();
+                    }
+                    _timerManager.cancelTimer(true);
+                  },
+                  child: const Text('确认'),
+                ),
+              ],
+            );
+          },
         );
       },
     );
@@ -174,13 +157,17 @@ class _FocusTimerPageState extends State<FocusTimerPage>
   }
 
   Widget _buildProgressSlider(Function(int) onChanged, int adjustedProgress) {
+    // 确保值在有效范围内
+    double sliderValue = adjustedProgress.toDouble();
+    sliderValue = sliderValue.clamp(0.0, 10.0);
+
     return Row(
       children: [
         const Text('任务进度:'),
         const SizedBox(width: 8),
         Expanded(
           child: Slider(
-            value: adjustedProgress.toDouble(),
+            value: sliderValue,
             min: 0,
             max: 10,
             divisions: 10,
@@ -233,6 +220,7 @@ class _FocusTimerPageState extends State<FocusTimerPage>
         actualDuration: adjustedDuration,
         pauseCount: _timerManager.pauseCount,
         exitCount: _timerManager.exitCount,
+        isCompleted: true, // 完成的计时器标记为已完成
         todos: todos.isNotEmpty ? todos : null,
         progressList: progressList.isNotEmpty ? progressList : null,
         focusedTimeList: focusedTimeList.isNotEmpty ? focusedTimeList : null,

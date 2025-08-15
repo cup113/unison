@@ -97,14 +97,19 @@ class _StatisticsPageState extends State<StatisticsPage> {
       0,
       (sum, record) => (sum + record['plannedDuration']) as int,
     );
-    double completionRate = totalSessions > 0
-        ? _records
-                .where((record) =>
-                    record['actualDuration'] >= record['plannedDuration'] * 0.9)
-                .length /
-            totalSessions *
-            100
-        : 0;
+
+    // 使用新的完成状态字段，对于旧记录使用兼容逻辑
+    int completedSessions = _records.where((record) {
+      // 如果有 isCompleted 字段，直接使用它
+      if (record.containsKey('isCompleted')) {
+        return record['isCompleted'] == true;
+      }
+      // 对于旧记录，使用原来的逻辑
+      return record['actualDuration'] >= record['plannedDuration'];
+    }).length;
+
+    double completionRate =
+        totalSessions > 0 ? (completedSessions / totalSessions) * 100 : 0;
 
     return Card(
       child: Padding(
@@ -266,7 +271,15 @@ class _StatisticsPageState extends State<StatisticsPage> {
     final exitCount = record['exitCount'] ?? 0;
     final todoData = record['todoData'];
 
-    bool isCompleted = actualDuration >= plannedDuration * 0.9;
+    // 使用新的完成状态字段，对于旧记录使用兼容逻辑
+    bool isCompleted;
+    if (record.containsKey('isCompleted')) {
+      // 新记录直接使用 isCompleted 字段
+      isCompleted = record['isCompleted'] == true;
+    } else {
+      // 旧记录使用原来的逻辑
+      isCompleted = actualDuration >= plannedDuration;
+    }
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
