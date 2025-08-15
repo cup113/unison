@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:unison/todo.dart';
 import 'package:unison/timer_manager.dart';
 import 'app_state_manager.dart';
 import 'active_todo_view.dart';
@@ -47,16 +48,7 @@ class _TimerViewState extends State<TimerView> {
   Widget build(BuildContext context) {
     final timerManager = widget.appStateManager.timerManager;
     final todoManager = widget.appStateManager.todoManager;
-
-    // 修改：允许remainingSeconds为负数
-    if (widget.remainingSeconds <= 0 && !timerManager.dialogActive) {
-      // 设置dialogActive为true，防止重复触发
-      timerManager.setDialogActive(true);
-      // 使用addPostFrameCallback避免在build过程中调用setState
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        widget.onTimerComplete();
-      });
-    }
+    final Todo? activeTodo = todoManager.getActiveTodo();
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -73,7 +65,8 @@ class _TimerViewState extends State<TimerView> {
                   child: _buildTimerDisplay(),
                 ),
               ),
-              _buildTimerControls(timerManager),
+              _buildAddTimeButtons(timerManager),
+              _buildTimerControls(timerManager, activeTodo),
               const SizedBox(height: 20),
               const Divider(height: 1, thickness: 1),
               const SizedBox(height: 20),
@@ -129,19 +122,13 @@ class _TimerViewState extends State<TimerView> {
           begin: 0,
           end: progress,
         ),
-        duration: const Duration(milliseconds: 300),
+        duration: const Duration(milliseconds: 800),
         builder: (context, value, child) {
           return CircularProgressIndicator(
             value: value,
             strokeWidth: 12,
             backgroundColor: Colors.grey[300],
-            valueColor: AlwaysStoppedAnimation<Color>(
-              value < 0.3
-                  ? Colors.red
-                  : value < 0.7
-                      ? Colors.orange
-                      : Colors.green,
-            ),
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
           );
         },
       ),
@@ -156,10 +143,16 @@ class _TimerViewState extends State<TimerView> {
           '${isNegative ? '-' : ''}${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}',
           key: ValueKey(
               '${isNegative ? '-' : ''}${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}'),
-          style: const TextStyle(
-            fontSize: 56,
-            fontWeight: FontWeight.bold,
-          ),
+          style: widget.remainingSeconds < 0
+              ? const TextStyle(
+                  fontSize: 56,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.redAccent,
+                )
+              : const TextStyle(
+                  fontSize: 56,
+                  fontWeight: FontWeight.bold,
+                ),
         ),
         const SizedBox(height: 8),
         Text(
@@ -178,7 +171,50 @@ class _TimerViewState extends State<TimerView> {
     );
   }
 
-  Widget _buildTimerControls(TimerManager timerManager) {
+  Widget _buildAddTimeButtons(TimerManager timerManager) {
+    // 仅在剩余时间为负时显示加时按钮
+    if (widget.remainingSeconds >= 0) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _buildAddTimeButton(timerManager, 1),
+            const SizedBox(width: 10),
+            _buildAddTimeButton(timerManager, 2),
+            const SizedBox(width: 10),
+            _buildAddTimeButton(timerManager, 5),
+            const SizedBox(width: 10),
+            _buildAddTimeButton(timerManager, 10),
+            const SizedBox(width: 10),
+            _buildAddTimeButton(timerManager, 15),
+          ],
+        ),
+        const SizedBox(height: 10),
+      ],
+    );
+  }
+
+  Widget _buildAddTimeButton(TimerManager timerManager, int minutes) {
+    return ElevatedButton(
+      onPressed: () {
+        timerManager.addTime(minutes);
+        if (!timerManager.isTimerActive && timerManager.isPaused) {
+          timerManager.resumeTimer();
+        }
+      },
+      child: Text('+$minutes分钟'),
+    );
+  }
+
+  Widget _buildTimerControls(TimerManager timerManager, Todo? activeTodo) {
+    final bool canComplete =
+        widget.remainingSeconds <= widget.selectedDuration * 60 ~/ 2;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -188,6 +224,8 @@ class _TimerViewState extends State<TimerView> {
             _buildPauseResumeButton(timerManager),
             const SizedBox(width: 20),
             _buildCancelButton(timerManager),
+            const SizedBox(width: 20),
+            _buildCompleteButton(timerManager, canComplete),
           ],
         ),
         const SizedBox(height: 20),
@@ -223,8 +261,6 @@ class _TimerViewState extends State<TimerView> {
             timerManager.isTimerActive ? Icons.pause : Icons.play_arrow,
             size: 24,
           ),
-          const SizedBox(width: 8),
-          Text(timerManager.isTimerActive ? '暂停' : '继续'),
         ],
       ),
     );
@@ -294,8 +330,34 @@ class _TimerViewState extends State<TimerView> {
         mainAxisSize: MainAxisSize.min,
         children: [
           const Icon(Icons.cancel, size: 24, color: Colors.red),
-          const SizedBox(width: 8),
-          const Text('取消'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCompleteButton(TimerManager timerManager, bool canComplete) {
+    return ElevatedButton(
+      onPressed: canComplete
+          ? () {
+              widget.onTimerComplete();
+            }
+          : null,
+      style: ElevatedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
+        textStyle: const TextStyle(fontSize: 18),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        elevation: 4,
+        animationDuration: const Duration(milliseconds: 200),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: const [
+          Icon(Icons.check, size: 24),
         ],
       ),
     );

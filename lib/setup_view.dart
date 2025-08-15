@@ -23,7 +23,7 @@ class SetupView extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           const Text(
-            '选择专注时长开始任务',
+            '选择专注时长（分钟）开始任务',
             style: TextStyle(fontSize: 16, color: Colors.grey),
           ),
           const SizedBox(height: 40),
@@ -45,7 +45,7 @@ class SetupView extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: Text('${minutes.toString().padLeft(2, '0')}:00'),
+                child: Text(minutes.toString()),
               );
             }).toList(),
           ),

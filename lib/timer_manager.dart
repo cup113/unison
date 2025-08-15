@@ -13,7 +13,6 @@ class TimerManager with ChangeNotifier {
   int _pauseCount = 0; // 暂停次数
   DateTime? _startTime; // 开始时间
   DateTime? _lastTickTime; // 上次计时时间
-  bool _dialogActive = false; // 标记弹窗是否激活
   static const String _timerStateKey = 'timer_state_v2';
   static const String _focusRecordsKey = 'focus_records_v2';
 
@@ -24,7 +23,6 @@ class TimerManager with ChangeNotifier {
   bool get isPaused => _isPaused;
   bool get isTimerActive => _timer?.isActive ?? false;
   DateTime? get startTime => _startTime;
-  bool get dialogActive => _dialogActive;
 
   Future<void> loadFromStorage() async {
     final prefs = await SharedPreferences.getInstance();
@@ -39,7 +37,6 @@ class TimerManager with ChangeNotifier {
       _exitCount = timerState['exitCount'] ?? 0;
       _isPaused = timerState['isPaused'] ?? false;
       _pauseCount = timerState['pauseCount'] ?? 0;
-      _dialogActive = timerState['dialogActive'] ?? false; // 加载dialogActive状态
       _startTime = timerState['startTime'] != null
           ? DateTime.fromMillisecondsSinceEpoch(timerState['startTime'])
           : null;
@@ -68,7 +65,6 @@ class TimerManager with ChangeNotifier {
         'exitCount': _exitCount,
         'isPaused': _isPaused,
         'pauseCount': _pauseCount,
-        'dialogActive': _dialogActive, // 保存dialogActive状态
         'startTime': _startTime?.millisecondsSinceEpoch,
         'lastExitTime': _lastExitTime?.millisecondsSinceEpoch,
         'lastTickTime': _lastTickTime?.millisecondsSinceEpoch,
@@ -122,7 +118,6 @@ class TimerManager with ChangeNotifier {
     _exitCount = 0; // 重置退出次数
     _startTime = DateTime.now(); // 记录开始时间
     _lastTickTime = _startTime; // 初始化上次调用时间为开始时间
-    _dialogActive = false; // 重置dialogActive状态
 
     _timer?.cancel();
     _startTimerPeriodic();
@@ -140,6 +135,7 @@ class TimerManager with ChangeNotifier {
 
   // 提取公共的计时器逻辑到私有方法
   void _startTimerPeriodic() {
+    _lastTickTime = DateTime.now();
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       final now = DateTime.now();
       // 检查距离上次调用的时间间隔
@@ -195,16 +191,8 @@ class TimerManager with ChangeNotifier {
     _remainingSeconds = null;
     _isPaused = false;
     _startTime = null;
-    _dialogActive = false; // 重置dialogActive状态
     saveToStorage();
     notifyListeners();
-  }
-
-  // 新增：设置dialogActive状态
-  void setDialogActive(bool active) {
-    _dialogActive = active;
-    notifyListeners();
-    saveToStorage();
   }
 
   // 新增：增加时间功能
