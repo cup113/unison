@@ -78,7 +78,7 @@ class _ActiveTodoViewState extends State<ActiveTodoView> {
             ),
           ),
         ),
-        if (activeTodo.isCompleted) ...[
+        if (activeTodo.isCompleted)
           Container(
             padding: const EdgeInsets.symmetric(
               horizontal: 10,
@@ -93,69 +93,81 @@ class _ActiveTodoViewState extends State<ActiveTodoView> {
               style: TextStyle(color: Colors.white, fontSize: 12),
             ),
           ),
-        ],
       ],
     );
   }
 
   Widget _buildTodoTags(Todo activeTodo) {
-    return Row(
-      children: [
-        if (activeTodo.category.isNotEmpty) ...[
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 8,
-              vertical: 4,
-            ),
-            decoration: BoxDecoration(
-              color: Colors.blueGrey.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.category, size: 14, color: Colors.blueGrey),
-                const SizedBox(width: 4),
-                Text(
-                  activeTodo.category,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Colors.blueGrey,
-                  ),
-                ),
-              ],
-            ),
+    final List<Widget> tags = [];
+
+    if (activeTodo.category.isNotEmpty) {
+      tags.add(
+        Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 8,
+            vertical: 4,
           ),
-          const SizedBox(width: 12),
-        ],
-        if (activeTodo.estimatedTime > 0) ...[
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 8,
-              vertical: 4,
-            ),
-            decoration: BoxDecoration(
-              color: Colors.deepOrange.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.schedule, size: 14, color: Colors.deepOrange),
-                const SizedBox(width: 4),
-                Text(
-                  '${activeTodo.estimatedTime}分钟',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Colors.deepOrange,
-                  ),
-                ),
-              ],
-            ),
+          decoration: BoxDecoration(
+            color: Colors.blueGrey.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(6),
           ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.category, size: 14, color: Colors.blueGrey),
+              const SizedBox(width: 4),
+              Text(
+                activeTodo.category,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Colors.blueGrey,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (activeTodo.estimatedTime > 0) {
+      tags.add(
+        Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 8,
+            vertical: 4,
+          ),
+          decoration: BoxDecoration(
+            color: Colors.deepOrange.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.schedule, size: 14, color: Colors.deepOrange),
+              const SizedBox(width: 4),
+              Text(
+                '${activeTodo.estimatedTime}分钟',
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Colors.deepOrange,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (tags.isNotEmpty) {
+      return Row(
+        children: [
+          ...tags.expand((tag) => [tag, const SizedBox(width: 12)]).toList()
+            ..removeLast(), // 移除最后一个SizedBox
         ],
-      ],
-    );
+      );
+    }
+
+    return const SizedBox.shrink();
   }
 
   Widget _buildProgressSlider(Todo activeTodo) {
@@ -206,33 +218,28 @@ class _ActiveTodoViewState extends State<ActiveTodoView> {
         constraints: const BoxConstraints(maxWidth: 360),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
-          child: Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: activeTodo.isCompleted
-                      ? Colors.grey[200]
-                      : Colors.green[50],
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: activeTodo.isCompleted
-                        ? Colors.grey.shade300
-                        : Colors.green.shade200,
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildTodoTitle(activeTodo),
-                    const SizedBox(height: 12),
-                    _buildTodoTags(activeTodo),
-                    const SizedBox(height: 16),
-                    _buildProgressSlider(activeTodo),
-                  ],
-                ),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color:
+                  activeTodo.isCompleted ? Colors.grey[200] : Colors.green[50],
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: activeTodo.isCompleted
+                    ? Colors.grey.shade300
+                    : Colors.green.shade200,
               ),
-            ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildTodoTitle(activeTodo),
+                const SizedBox(height: 12),
+                _buildTodoTags(activeTodo),
+                const SizedBox(height: 16),
+                _buildProgressSlider(activeTodo),
+              ],
+            ),
           ),
         ),
       ),

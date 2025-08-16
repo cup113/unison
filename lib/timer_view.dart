@@ -87,20 +87,16 @@ class _TimerViewState extends State<TimerView> {
   }
 
   Widget _buildTimerDisplay() {
-    // 修改：处理负数时间显示
+    // 统一处理时间计算，包括负数情况
     final totalSeconds = widget.remainingSeconds.abs();
     final minutes = (totalSeconds / 60).floor();
     final seconds = totalSeconds % 60;
     final isNegative = widget.remainingSeconds < 0;
 
-    // 修改：处理进度计算，允许负数
-    double progress;
-    if (widget.remainingSeconds >= 0) {
-      progress =
-          1.0 - (widget.remainingSeconds / (widget.selectedDuration * 60));
-    } else {
-      progress = 1.0;
-    }
+    // 简化进度计算逻辑
+    final progress = widget.remainingSeconds >= 0
+        ? 1.0 - (widget.remainingSeconds / (widget.selectedDuration * 60))
+        : 1.0;
 
     return Stack(
       alignment: Alignment.center,
@@ -136,43 +132,36 @@ class _TimerViewState extends State<TimerView> {
   }
 
   Widget _buildTimerText(int minutes, int seconds, bool isNegative) {
+    final timeString =
+        '${isNegative ? '-' : ''}${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+    final elapsedMinutes =
+        ((widget.selectedDuration * 60 - widget.remainingSeconds) ~/ 60).abs();
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          '${isNegative ? '-' : ''}${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}',
-          key: ValueKey(
-              '${isNegative ? '-' : ''}${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}'),
-          style: widget.remainingSeconds < 0
-              ? const TextStyle(
-                  fontSize: 56,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.redAccent,
-                )
-              : const TextStyle(
-                  fontSize: 56,
-                  fontWeight: FontWeight.bold,
-                ),
+          timeString,
+          key: ValueKey(timeString),
+          style: TextStyle(
+            fontSize: 56,
+            fontWeight: FontWeight.bold,
+            color: isNegative ? Colors.redAccent : null,
+          ),
         ),
         const SizedBox(height: 8),
         Text(
-          '${((widget.selectedDuration * 60 - widget.remainingSeconds) ~/ 60).abs()}/${widget.selectedDuration} 分钟',
-          style: isNegative
-              ? const TextStyle(
-                  fontSize: 18,
-                  color: Colors.red,
-                )
-              : const TextStyle(
-                  fontSize: 18,
-                  color: Colors.grey,
-                ),
+          '$elapsedMinutes/${widget.selectedDuration} 分钟',
+          style: TextStyle(
+            fontSize: 18,
+            color: isNegative ? Colors.red : Colors.grey,
+          ),
         ),
       ],
     );
   }
 
   Widget _buildAddTimeButtons(TimerManager timerManager) {
-    // 仅在剩余时间为负时显示加时按钮
     if (widget.remainingSeconds >= 0) {
       return const SizedBox.shrink();
     }
@@ -182,17 +171,16 @@ class _TimerViewState extends State<TimerView> {
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _buildAddTimeButton(timerManager, 1),
-            const SizedBox(width: 10),
-            _buildAddTimeButton(timerManager, 2),
-            const SizedBox(width: 10),
-            _buildAddTimeButton(timerManager, 5),
-            const SizedBox(width: 10),
-            _buildAddTimeButton(timerManager, 10),
-            const SizedBox(width: 10),
-            _buildAddTimeButton(timerManager, 15),
-          ],
+          children: [1, 5, 15]
+              .map(
+                (minutes) => Row(
+                  children: [
+                    _buildAddTimeButton(timerManager, minutes),
+                    if (minutes != 15) const SizedBox(width: 10),
+                  ],
+                ),
+              )
+              .toList(),
         ),
         const SizedBox(height: 10),
       ],
@@ -279,9 +267,9 @@ class _TimerViewState extends State<TimerView> {
           builder: (BuildContext context) {
             return AlertDialog(
               title: const Text('确认取消'),
-              content: elapsedMinutes < 1
-                  ? const Text('计时不足1分钟，此次计时将不会被记录。确定要取消吗？')
-                  : const Text('确定要取消当前计时吗？'),
+              content: Text(elapsedMinutes < 1
+                  ? '计时不足1分钟，此次计时将不会被记录。确定要取消吗？'
+                  : '确定要取消当前计时吗？'),
               actions: [
                 TextButton(
                   onPressed: () {
@@ -326,10 +314,10 @@ class _TimerViewState extends State<TimerView> {
         ),
         side: const BorderSide(width: 2, color: Colors.red),
       ),
-      child: Row(
+      child: const Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.cancel, size: 24, color: Colors.red),
+          Icon(Icons.cancel, size: 24, color: Colors.red),
         ],
       ),
     );
@@ -354,9 +342,9 @@ class _TimerViewState extends State<TimerView> {
         elevation: 4,
         animationDuration: const Duration(milliseconds: 200),
       ),
-      child: Row(
+      child: const Row(
         mainAxisSize: MainAxisSize.min,
-        children: const [
+        children: [
           Icon(Icons.check, size: 24),
         ],
       ),
