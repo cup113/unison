@@ -291,26 +291,44 @@ class _StatisticsPageState extends State<StatisticsPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  '${DateFormat('MM-dd HH:mm').format(startTime)} - ${DateFormat('HH:mm').format(endTime)}',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                Expanded(
+                  // 添加 Expanded 防止溢出
+                  child: Text(
+                    '${DateFormat('MM-dd HH:mm').format(startTime)} - ${DateFormat('HH:mm').format(endTime)}',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isCompleted ? Colors.green : Colors.orange,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    isCompleted ? '已完成' : '未完成',
-                    style: const TextStyle(color: Colors.white, fontSize: 12),
-                  ),
+                Row(
+                  // 用 Row 包裹状态和删除按钮
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isCompleted ? Colors.green : Colors.orange,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        isCompleted ? '已完成' : '未完成',
+                        style:
+                            const TextStyle(color: Colors.white, fontSize: 12),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      // 添加删除按钮
+                      icon: const Icon(Icons.delete_outline,
+                          size: 20, color: Colors.red),
+                      onPressed: () => _showDeleteConfirmDialog(record),
+                      tooltip: '删除记录',
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -350,6 +368,50 @@ class _StatisticsPageState extends State<StatisticsPage> {
         ),
       ),
     );
+  }
+
+  // 添加删除确认对话框
+  void _showDeleteConfirmDialog(Map<String, dynamic> record) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('确认删除'),
+        content: const Text('确定要删除这条专注记录吗？此操作不可恢复。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _deleteRecord(record);
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('删除'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 添加删除记录方法
+  Future<void> _deleteRecord(Map<String, dynamic> record) async {
+    try {
+      // TODO: await widget.appStateManager.deleteFocusRecord(record['id']);
+      await _loadRecords(); // 重新加载数据
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('记录已删除')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('删除失败，请重试')),
+        );
+      }
+    }
   }
 
   Widget _buildRecordStatRow(String label, String value) {

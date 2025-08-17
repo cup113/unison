@@ -195,6 +195,8 @@ class _TimerViewState extends State<TimerView> {
           timerManager.resumeTimer();
         }
       },
+      style: ElevatedButton.styleFrom(
+          padding: EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0)),
       child: Text('+$minutes分钟'),
     );
   }

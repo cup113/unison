@@ -69,13 +69,15 @@ class _FocusTimerPageState extends State<FocusTimerPage>
     int actualDuration = (_timerManager.selectedDuration ?? 0) -
         (_timerManager.remainingSeconds ?? 0) ~/ 60;
 
-    // 在这里定义状态变量，确保它们在整个对话框中保持一致
-    int adjustedProgress = activeTodo?.progress ?? 0;
-    int adjustedDuration = actualDuration;
+    // 提升控制器和状态管理到外部
+    final durationController =
+        TextEditingController(text: actualDuration.toString());
+    final durationNotifier = ValueNotifier<int>(actualDuration);
+    final progressNotifier = ValueNotifier<int>(activeTodo?.progress ?? 0);
 
     showDialog(
       context: context,
-      barrierDismissible: false, // 用户必须确认对话框
+      barrierDismissible: false,
       builder: (BuildContext context) {
         return StatefulBuilder(
           builder: (context, setState) {
@@ -91,17 +93,9 @@ class _FocusTimerPageState extends State<FocusTimerPage>
                     if (activeTodo != null) ...[
                       Text('任务: ${activeTodo.title}'),
                       const SizedBox(height: 8),
-                      _buildDurationInput((value) {
-                        setState(() {
-                          adjustedDuration = value;
-                        });
-                      }, adjustedDuration),
+                      _buildDurationInput(durationController, durationNotifier),
                       const SizedBox(height: 8),
-                      _buildProgressSlider((value) {
-                        setState(() {
-                          adjustedProgress = value;
-                        });
-                      }, adjustedProgress),
+                      _buildProgressSlider(progressNotifier),
                     ] else
                       const Text('未选择任务'),
                   ],
@@ -113,8 +107,8 @@ class _FocusTimerPageState extends State<FocusTimerPage>
                     await _handleTimerCompletion(
                       activeTodo,
                       actualDuration,
-                      adjustedDuration,
-                      adjustedProgress,
+                      durationNotifier.value,
+                      progressNotifier.value,
                     );
                     if (context.mounted) {
                       Navigator.of(context).pop();
@@ -128,10 +122,17 @@ class _FocusTimerPageState extends State<FocusTimerPage>
           },
         );
       },
-    );
+    ).then((_) {
+      durationController.dispose();
+      durationNotifier.dispose();
+      progressNotifier.dispose();
+    });
   }
 
-  Widget _buildDurationInput(Function(int) onChanged, int adjustedDuration) {
+  Widget _buildDurationInput(
+    TextEditingController controller,
+    ValueNotifier<int> durationNotifier,
+  ) {
     return Row(
       children: [
         const Text('实际专注时间:'),
@@ -140,15 +141,14 @@ class _FocusTimerPageState extends State<FocusTimerPage>
           width: 100,
           child: TextField(
             keyboardType: TextInputType.number,
-            controller:
-                TextEditingController(text: adjustedDuration.toString()),
+            controller: controller,
             decoration: const InputDecoration(
               suffixText: '分钟',
               border: OutlineInputBorder(),
             ),
             onChanged: (value) {
-              final parsedValue = int.tryParse(value) ?? adjustedDuration;
-              onChanged(parsedValue);
+              final parsedValue = int.tryParse(value) ?? durationNotifier.value;
+              durationNotifier.value = parsedValue;
             },
           ),
         ),
@@ -156,29 +156,30 @@ class _FocusTimerPageState extends State<FocusTimerPage>
     );
   }
 
-  Widget _buildProgressSlider(Function(int) onChanged, int adjustedProgress) {
-    // 确保值在有效范围内
-    double sliderValue = adjustedProgress.toDouble();
-    sliderValue = sliderValue.clamp(0.0, 10.0);
-
-    return Row(
-      children: [
-        const Text('任务进度:'),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Slider(
-            value: sliderValue,
-            min: 0,
-            max: 10,
-            divisions: 10,
-            label: adjustedProgress.toString(),
-            onChanged: (value) {
-              onChanged(value.toInt());
-            },
-          ),
-        ),
-        Text('$adjustedProgress/10'),
-      ],
+  Widget _buildProgressSlider(ValueNotifier<int> progressNotifier) {
+    return ValueListenableBuilder<int>(
+      valueListenable: progressNotifier,
+      builder: (context, value, child) {
+        return Row(
+          children: [
+            const Text('任务进度:'),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Slider(
+                value: value.toDouble(),
+                min: 0,
+                max: 10,
+                divisions: 10,
+                label: value.toString(),
+                onChanged: (newValue) {
+                  progressNotifier.value = newValue.toInt();
+                },
+              ),
+            ),
+            Text('$value/10'),
+          ],
+        );
+      },
     );
   }
 
@@ -273,7 +274,6 @@ class _FocusTimerPageState extends State<FocusTimerPage>
           switchInCurve: Curves.easeInOut,
           switchOutCurve: Curves.easeInOut,
           child: Center(
-            // 修改这里：使用更明确的key来区分两种状态
             key: ValueKey<String>(
                 _timerManager.remainingSeconds == null ? 'setup' : 'timer'),
             child: _timerManager.remainingSeconds == null

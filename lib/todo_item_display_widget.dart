@@ -62,7 +62,7 @@ class _TodoItemDisplayWidgetState extends State<TodoItemDisplayWidget> {
           onPressed: () {
             widget.todoManager.toggleActive(widget.todo.id);
             widget.onTodoChanged();
-            setState(() {}); // 重新构建以更新图标状态
+            setState(() {});
           },
         ),
         IconButton(
@@ -70,6 +70,17 @@ class _TodoItemDisplayWidgetState extends State<TodoItemDisplayWidget> {
           onPressed: () {
             // 在实际应用中，这里可以打开编辑界面
             _showEditDialog(context);
+          },
+        ),
+        IconButton(
+          icon: Icon(
+            widget.todo.isArchived ? Icons.archive : Icons.archive_outlined,
+            color: widget.todo.isArchived ? Colors.grey : null,
+          ),
+          onPressed: () {
+            widget.todoManager.toggleArchive(widget.todo.id);
+            widget.onTodoChanged();
+            setState(() {});
           },
         ),
         IconButton(

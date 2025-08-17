@@ -40,9 +40,10 @@ class TodoManager {
             title: todoJson['title'],
             progress: todoJson['progress'],
             isActive: todoJson['isActive'],
+            isArchived: todoJson['isArchived'] ?? false,
             category: todoJson['category'],
             estimatedTime: todoJson['estimatedTime'],
-            focusedTime: todoJson['focusedTime'] ?? 0, // 添加focusedTime字段
+            focusedTime: todoJson['focusedTime'] ?? 0,
           ),
         );
       }
@@ -62,9 +63,10 @@ class TodoManager {
             'title': todo.title,
             'progress': todo.progress,
             'isActive': todo.isActive,
+            'isArchived': todo.isArchived,
             'category': todo.category,
             'estimatedTime': todo.estimatedTime,
-            'focusedTime': todo.focusedTime, // 添加focusedTime字段
+            'focusedTime': todo.focusedTime,
           },
         )
         .toList();
@@ -150,6 +152,19 @@ class TodoManager {
     saveToStorage();
     _notifyListeners();
   }
+
+  void toggleArchive(String id) {
+    final index = _todos.indexWhere((todo) => todo.id == id);
+    if (index == -1) return;
+    _todos[index] =
+        _todos[index].copyWith(isArchived: !_todos[index].isArchived);
+    _notifyListeners();
+  }
+
+  List<Todo> get notArchivedTodos =>
+      _todos.where((todo) => !todo.isArchived).toList();
+  List<Todo> get archivedTodos =>
+      _todos.where((todo) => todo.isArchived).toList();
 
   // 修改 getActiveTodo 方法，添加 includeCompleted 参数
   Todo? getActiveTodo({bool includeCompleted = false}) {
