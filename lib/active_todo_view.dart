@@ -185,8 +185,8 @@ class _ActiveTodoViewState extends State<ActiveTodoView> {
             child: Slider(
               value: activeTodo.progress.toDouble(),
               min: 0,
-              max: 10,
-              divisions: 10,
+              max: activeTodo.total.toDouble(),
+              divisions: activeTodo.total,
               label: activeTodo.progress.toString(),
               onChanged: (value) {
                 todoManager.setProgress(activeTodo.id, value.toInt());
@@ -200,7 +200,7 @@ class _ActiveTodoViewState extends State<ActiveTodoView> {
             const Icon(Icons.task, size: 16, color: Colors.grey),
             const SizedBox(width: 4),
             Text(
-              '进度 ${activeTodo.progress}/10',
+              '进度 ${activeTodo.progress}/${activeTodo.total}',
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,

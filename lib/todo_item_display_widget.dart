@@ -222,8 +222,8 @@ class _TodoItemDisplayWidgetState extends State<TodoItemDisplayWidget> {
             child: Slider(
               value: widget.todo.progress.toDouble(),
               min: 0,
-              max: 10,
-              divisions: 10,
+              max: widget.todo.total.toDouble(),
+              divisions: widget.todo.total,
               label: widget.todo.progress.toString(),
               onChanged: (value) {
                 widget.todoManager.setProgress(widget.todo.id, value.toInt());
@@ -232,7 +232,7 @@ class _TodoItemDisplayWidgetState extends State<TodoItemDisplayWidget> {
             ),
           ),
         ),
-        Text('${widget.todo.progress}/10'),
+        Text('${widget.todo.progress}/${widget.todo.total}'),
       ],
     );
   }

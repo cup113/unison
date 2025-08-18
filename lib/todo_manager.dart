@@ -44,6 +44,7 @@ class TodoManager {
             category: todoJson['category'],
             estimatedTime: todoJson['estimatedTime'],
             focusedTime: todoJson['focusedTime'] ?? 0,
+            total: todoJson['total'] ?? 10,
           ),
         );
       }
@@ -67,18 +68,21 @@ class TodoManager {
             'category': todo.category,
             'estimatedTime': todo.estimatedTime,
             'focusedTime': todo.focusedTime,
+            'total': todo.total,
           },
         )
         .toList();
     prefs.setString(_todoListKey, json.encode(todoListJson));
   }
 
-  void addTodo(String title, {String category = '', int estimatedTime = 0}) {
+  void addTodo(String title,
+      {String category = '', int estimatedTime = 0, int total = 10}) {
     final todo = Todo(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       title: title,
       category: category,
       estimatedTime: estimatedTime,
+      total: total,
     );
     _todos.add(todo);
     saveToStorage();
@@ -97,6 +101,7 @@ class TodoManager {
     String? category,
     int? estimatedTime,
     int? focusedTime,
+    int? total,
   }) {
     final index = _todos.indexWhere((todo) => todo.id == id);
     if (index != -1) {
@@ -105,6 +110,7 @@ class TodoManager {
         category: category,
         estimatedTime: estimatedTime,
         focusedTime: focusedTime,
+        total: total,
       );
       saveToStorage();
       _notifyListeners();

@@ -24,6 +24,7 @@ class _TodoEditorWidgetState extends State<TodoEditorWidget> {
   late TextEditingController _titleController;
   late TextEditingController _categoryController;
   late TextEditingController _estimatedTimeController;
+  late TextEditingController _totalController;
 
   @override
   void initState() {
@@ -37,6 +38,9 @@ class _TodoEditorWidgetState extends State<TodoEditorWidget> {
     _estimatedTimeController = TextEditingController(
       text: widget.todo?.estimatedTime.toString() ?? '',
     );
+    _totalController = TextEditingController(
+      text: widget.todo?.total.toString() ?? '10',
+    );
   }
 
   @override
@@ -44,6 +48,7 @@ class _TodoEditorWidgetState extends State<TodoEditorWidget> {
     _titleController.dispose();
     _categoryController.dispose();
     _estimatedTimeController.dispose();
+    _totalController.dispose();
     super.dispose();
   }
 
@@ -84,7 +89,7 @@ class _TodoEditorWidgetState extends State<TodoEditorWidget> {
                 child: TextField(
                   controller: _estimatedTimeController,
                   decoration: const InputDecoration(
-                    labelText: '预计时间(分钟)',
+                    labelText: '预计分钟数',
                     border: OutlineInputBorder(),
                   ),
                   keyboardType: TextInputType.number,
@@ -94,13 +99,26 @@ class _TodoEditorWidgetState extends State<TodoEditorWidget> {
           ),
           const SizedBox(height: 20),
           Row(
-            mainAxisAlignment: MainAxisAlignment.end,
             children: [
+              Expanded(
+                flex: 2,
+                child: TextField(
+                  controller: _totalController,
+                  decoration: const InputDecoration(
+                    labelText: '进度总量',
+                    border: OutlineInputBorder(),
+                    contentPadding:
+                        EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                  keyboardType: TextInputType.number,
+                ),
+              ),
+              const SizedBox(width: 12),
               TextButton(
                 onPressed: widget.onCancel,
                 child: const Text('取消'),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
               ElevatedButton(
                 onPressed: _saveTodo,
                 child: Text(widget.todo == null ? '添加' : '保存'),
@@ -123,7 +141,7 @@ class _TodoEditorWidgetState extends State<TodoEditorWidget> {
       return;
     }
 
-    // 验证预计时间
+// 验证预计时间
     int estimatedTime = 0;
     if (_estimatedTimeController.text.isNotEmpty) {
       final parsedTime = int.tryParse(_estimatedTimeController.text);
@@ -139,12 +157,29 @@ class _TodoEditorWidgetState extends State<TodoEditorWidget> {
       estimatedTime = parsedTime;
     }
 
+    // 验证进度总量
+    int total = 10;
+    if (_totalController.text.isNotEmpty) {
+      final parsedTotal = int.tryParse(_totalController.text);
+      if (parsedTotal == null || parsedTotal <= 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('进度总量必须是正整数'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+      total = parsedTotal;
+    }
+
     if (widget.todo == null) {
       // 添加新任务
       widget.todoManager.addTodo(
         _titleController.text.trim(),
         category: _categoryController.text.trim(),
         estimatedTime: estimatedTime,
+        total: total,
       );
     } else {
       // 更新现有任务
@@ -153,6 +188,7 @@ class _TodoEditorWidgetState extends State<TodoEditorWidget> {
         _titleController.text.trim(),
         category: _categoryController.text.trim(),
         estimatedTime: estimatedTime,
+        total: total,
       );
     }
 
