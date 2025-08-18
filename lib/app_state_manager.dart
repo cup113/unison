@@ -85,9 +85,14 @@ class AppStateManager with ChangeNotifier {
     );
   }
 
-  // 新增：获取专注记录
+// 新增：获取专注记录
   Future<List<Map<String, dynamic>>> getFocusRecords() async {
     return await _timerManager.getFocusRecords();
+  }
+
+  // 删除专注记录
+  Future<void> deleteFocusRecord(int id) async {
+    await _timerManager.deleteFocusRecord(id);
   }
 
   @override

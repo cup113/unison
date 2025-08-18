@@ -154,7 +154,7 @@ class TimerManager with ChangeNotifier {
     prefs.setString(_focusRecordsKey, json.encode(records));
   }
 
-  // 获取专注记录
+// 获取专注记录
   Future<List<Map<String, dynamic>>> getFocusRecords() async {
     final prefs = await SharedPreferences.getInstance();
     final recordsString = prefs.getString(_focusRecordsKey);
@@ -167,6 +167,22 @@ class TimerManager with ChangeNotifier {
       }
     }
     return [];
+  }
+
+  // 删除专注记录
+  Future<void> deleteFocusRecord(int id) async {
+    final prefs = await SharedPreferences.getInstance();
+    final recordsString = prefs.getString(_focusRecordsKey);
+
+    if (recordsString != null) {
+      try {
+        final List<dynamic> records = json.decode(recordsString);
+        records.removeWhere((record) => record['id'] == id);
+        prefs.setString(_focusRecordsKey, json.encode(records));
+      } catch (e) {
+        // 如果解析失败，不做任何操作
+      }
+    }
   }
 
   // 开始计时器

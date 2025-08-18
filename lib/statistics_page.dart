@@ -398,7 +398,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
   // 添加删除记录方法
   Future<void> _deleteRecord(Map<String, dynamic> record) async {
     try {
-      // TODO: await widget.appStateManager.deleteFocusRecord(record['id']);
+      await widget.appStateManager.deleteFocusRecord(record['id']);
       await _loadRecords(); // 重新加载数据
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
