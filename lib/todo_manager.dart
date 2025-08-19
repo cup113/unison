@@ -1,5 +1,6 @@
 import 'dart:collection';
 import 'dart:convert';
+import 'package:nanoid2/nanoid2.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'todo.dart';
 
@@ -28,25 +29,30 @@ class TodoManager {
   Future<void> loadFromStorage() async {
     final prefs = await SharedPreferences.getInstance();
 
-    // 加载待办事项列表
+// 加载待办事项列表
     final todoListString = prefs.getString(_todoListKey);
     if (todoListString != null) {
-      final List<dynamic> todoListJson = json.decode(todoListString);
-      _todos.clear();
-      for (final todoJson in todoListJson) {
-        _todos.add(
-          Todo(
-            id: todoJson['id'],
-            title: todoJson['title'],
-            progress: todoJson['progress'],
-            isActive: todoJson['isActive'],
-            isArchived: todoJson['isArchived'] ?? false,
-            category: todoJson['category'],
-            estimatedTime: todoJson['estimatedTime'],
-            focusedTime: todoJson['focusedTime'] ?? 0,
-            total: todoJson['total'] ?? 10,
-          ),
-        );
+      try {
+        final List<dynamic> todoListJson = json.decode(todoListString);
+        _todos.clear();
+        for (final todoJson in todoListJson) {
+          _todos.add(
+            Todo(
+              id: todoJson['id'],
+              title: todoJson['title'],
+              progress: todoJson['progress'],
+              isActive: todoJson['isActive'],
+              isArchived: todoJson['isArchived'] ?? false,
+              category: todoJson['category'],
+              estimatedTime: todoJson['estimatedTime'],
+              focusedTime: todoJson['focusedTime'] ?? 0,
+              total: todoJson['total'] ?? 10,
+            ),
+          );
+        }
+      } catch (e) {
+        // If JSON parsing fails, clear the todos and continue
+        _todos.clear();
       }
     }
 
@@ -75,34 +81,34 @@ class TodoManager {
     prefs.setString(_todoListKey, json.encode(todoListJson));
   }
 
-  void addTodo(String title,
-      {String category = '', int estimatedTime = 0, int total = 10}) {
+  Future<void> addTodo(String title,
+      {String category = '', int estimatedTime = 0, int total = 10}) async {
     final todo = Todo(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      id: nanoid(),
       title: title,
       category: category,
       estimatedTime: estimatedTime,
       total: total,
     );
     _todos.add(todo);
-    saveToStorage();
+    await saveToStorage();
     _notifyListeners();
   }
 
-  void removeTodo(String id) {
+  Future<void> removeTodo(String id) async {
     _todos.removeWhere((todo) => todo.id == id);
-    saveToStorage();
+    await saveToStorage();
     _notifyListeners();
   }
 
-  void updateTodo(
+  Future<void> updateTodo(
     String id,
     String title, {
     String? category,
     int? estimatedTime,
     int? focusedTime,
     int? total,
-  }) {
+  }) async {
     final index = _todos.indexWhere((todo) => todo.id == id);
     if (index != -1) {
       _todos[index] = _todos[index].copyWith(
@@ -112,34 +118,34 @@ class TodoManager {
         focusedTime: focusedTime,
         total: total,
       );
-      saveToStorage();
+      await saveToStorage();
       _notifyListeners();
     }
   }
 
-  // 添加设置进度的方法
-  void setProgress(String id, int progress) {
+// 添加设置进度的方法
+  Future<void> setProgress(String id, int progress) async {
     final index = _todos.indexWhere((todo) => todo.id == id);
     if (index != -1) {
       _todos[index] = _todos[index].copyWith(progress: progress);
-      saveToStorage();
+      await saveToStorage();
       _notifyListeners();
     }
   }
 
-  // 添加增加专注时间的方法
-  void addFocusedTime(String id, int minutes) {
+// 添加增加专注时间的方法
+  Future<void> addFocusedTime(String id, int minutes) async {
     final index = _todos.indexWhere((todo) => todo.id == id);
     if (index != -1) {
       _todos[index] = _todos[index].copyWith(
         focusedTime: _todos[index].focusedTime + minutes,
       );
-      saveToStorage();
+      await saveToStorage();
       _notifyListeners();
     }
   }
 
-  void toggleActive(String id) {
+  Future<void> toggleActive(String id) async {
     final index = _todos.indexWhere((todo) => todo.id == id);
     if (index == -1) return;
     if (_todos[index].isActive) {
@@ -152,18 +158,19 @@ class TodoManager {
           _todos[i] = _todos[i].copyWith(isActive: false);
         }
       }
-      _todos[index] = _todos[index].copyWith(isActive: !_todos[index].isActive);
+      _todos[index] = _todos[index].copyWith(isActive: true);
     }
 
-    saveToStorage();
+    await saveToStorage();
     _notifyListeners();
   }
 
-  void toggleArchive(String id) {
+  Future<void> toggleArchive(String id) async {
     final index = _todos.indexWhere((todo) => todo.id == id);
     if (index == -1) return;
-    _todos[index] =
-        _todos[index].copyWith(isArchived: !_todos[index].isArchived);
+    final newValue = !_todos[index].isArchived;
+    _todos[index] = _todos[index].copyWith(isArchived: newValue);
+    await saveToStorage();
     _notifyListeners();
   }
 

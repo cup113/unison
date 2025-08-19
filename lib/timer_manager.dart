@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:nanoid2/nanoid2.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'focus.dart';
 
 class TimerState {
   final int? selectedDuration; // 选定的持续时间（分钟）
@@ -73,13 +75,13 @@ class TimerState {
 
 class TimerManager with ChangeNotifier {
   static const String _timerStateKey = 'timer_state_v2';
-  static const String _focusRecordsKey = 'focus_records_v2';
+  static const String _focusRecordsKey = 'focus_records_v3';
 
   TimerState _state = TimerState();
   Timer? _timer;
   DateTime? _lastTickTime;
 
-  // Getters
+// Getters
   int? get selectedDuration => _state.selectedDuration;
   int? get remainingSeconds => _state.remainingSeconds;
   int get exitCount => _state.exitCount;
@@ -87,6 +89,7 @@ class TimerManager with ChangeNotifier {
   bool get isPaused => _state.isPaused;
   bool get isTimerActive => _timer?.isActive ?? false;
   DateTime? get startTime => _state.startTime;
+  DateTime? get lastExitTime => _state.lastExitTime;
 
   Future<void> loadFromStorage() async {
     final prefs = await SharedPreferences.getInstance();
@@ -122,7 +125,7 @@ class TimerManager with ChangeNotifier {
     }
   }
 
-  // 保存专注记录
+// 保存专注记录
   Future<void> saveFocusRecord({
     required DateTime startTime,
     required DateTime endTime,
@@ -138,30 +141,58 @@ class TimerManager with ChangeNotifier {
     final List<dynamic> records =
         recordsString != null ? json.decode(recordsString) : [];
 
-    final newRecord = {
-      'id': DateTime.now().millisecondsSinceEpoch,
-      'startTime': startTime.millisecondsSinceEpoch,
-      'endTime': endTime.millisecondsSinceEpoch,
-      'plannedDuration': plannedDuration,
-      'actualDuration': actualDuration,
-      'pauseCount': pauseCount,
-      'exitCount': exitCount,
-      'isCompleted': isCompleted,
-      if (todoData != null) 'todoData': todoData,
-    };
+    // 计算中断时长（基于暂停次数和退出次数的估算）
+    final int interruptedDuration =
+        (pauseCount * 2) + (exitCount * 5); // TODO 简单估算
 
-    records.add(newRecord);
+    // 创建新的FocusRecord
+    final focusRecord = FocusRecord(
+      id: nanoid(),
+      start: startTime,
+      end: endTime,
+      durationTarget: plannedDuration,
+      durationFocus: actualDuration,
+      durationInterrupted: interruptedDuration,
+      isCompleted: isCompleted, // 使用显式的完成状态
+    );
+
+    // 如果有todo数据，创建FocusTodo记录
+    final List<FocusTodo> focusTodos = [];
+    if (todoData != null) {
+      for (int i = 0; i < todoData.length; i++) {
+        final todo = todoData[i];
+        focusTodos.add(FocusTodo(
+          id: '${focusRecord.id}_todo_$i',
+          todoId: todo['todoId'] ?? '',
+          focusId: focusRecord.id,
+          duration: todo['todoFocusedTime'] ?? 0,
+          progressStart: todo['todoProgressStart'] ?? 0, // 改进：使用开始进度
+          progressEnd: todo['todoProgress'] ?? 0,
+          todoTitle: todo['todoTitle'], // 保存TODO标题
+          todoCategory: todo['todoCategory'], // 保存TODO类别
+        ));
+      }
+    }
+
+    // 创建FocusSession
+    final focusSession = FocusSession(
+      focusRecord: focusRecord,
+      focusTodos: focusTodos,
+    );
+
+    records.add(focusSession.toMap());
     prefs.setString(_focusRecordsKey, json.encode(records));
   }
 
 // 获取专注记录
-  Future<List<Map<String, dynamic>>> getFocusRecords() async {
+  Future<List<FocusSession>> getFocusRecords() async {
     final prefs = await SharedPreferences.getInstance();
     final recordsString = prefs.getString(_focusRecordsKey);
 
     if (recordsString != null) {
       try {
-        return List<Map<String, dynamic>>.from(json.decode(recordsString));
+        final List<dynamic> records = json.decode(recordsString);
+        return records.map((record) => FocusSession.fromMap(record)).toList();
       } catch (e) {
         return [];
       }
@@ -169,15 +200,15 @@ class TimerManager with ChangeNotifier {
     return [];
   }
 
-  // 删除专注记录
-  Future<void> deleteFocusRecord(int id) async {
+// 删除专注记录
+  Future<void> deleteFocusRecord(String id) async {
     final prefs = await SharedPreferences.getInstance();
     final recordsString = prefs.getString(_focusRecordsKey);
 
     if (recordsString != null) {
       try {
         final List<dynamic> records = json.decode(recordsString);
-        records.removeWhere((record) => record['id'] == id);
+        records.removeWhere((record) => record['focusRecord']['id'] == id);
         prefs.setString(_focusRecordsKey, json.encode(records));
       } catch (e) {
         // 如果解析失败，不做任何操作
@@ -261,7 +292,7 @@ class TimerManager with ChangeNotifier {
               (_state.remainingSeconds ?? _state.selectedDuration! * 60)) ~/
           60;
 
-      if (!finished && actualDurationMinutes > 0) {
+      if (actualDurationMinutes > 0) {
         saveFocusRecord(
           startTime: _state.startTime!,
           endTime: endTime,
@@ -269,7 +300,7 @@ class TimerManager with ChangeNotifier {
           actualDuration: actualDurationMinutes,
           pauseCount: _state.pauseCount,
           exitCount: _state.exitCount,
-          isCompleted: false,
+          isCompleted: finished, // 根据用户操作显式设置完成状态
         );
       }
     }

@@ -95,7 +95,7 @@ class _FocusTimerPageState extends State<FocusTimerPage>
                       const SizedBox(height: 8),
                       _buildDurationInput(durationController, durationNotifier),
                       const SizedBox(height: 8),
-                      _buildProgressSlider(progressNotifier),
+                      _buildProgressSlider(progressNotifier, activeTodo.total),
                     ] else
                       const Text('未选择任务'),
                   ],
@@ -156,7 +156,8 @@ class _FocusTimerPageState extends State<FocusTimerPage>
     );
   }
 
-  Widget _buildProgressSlider(ValueNotifier<int> progressNotifier) {
+  Widget _buildProgressSlider(
+      ValueNotifier<int> progressNotifier, int maxProgress) {
     return ValueListenableBuilder<int>(
       valueListenable: progressNotifier,
       builder: (context, value, child) {
@@ -168,15 +169,15 @@ class _FocusTimerPageState extends State<FocusTimerPage>
               child: Slider(
                 value: value.toDouble(),
                 min: 0,
-                max: 10,
-                divisions: 10,
+                max: maxProgress.toDouble(),
+                divisions: maxProgress,
                 label: value.toString(),
                 onChanged: (newValue) {
                   progressNotifier.value = newValue.toInt();
                 },
               ),
             ),
-            Text('$value/10'),
+            Text('$value/$maxProgress'),
           ],
         );
       },

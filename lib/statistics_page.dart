@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'app_state_manager.dart';
+import 'focus.dart';
 
 class StatisticsPage extends StatefulWidget {
   final AppStateManager appStateManager;
@@ -12,7 +13,7 @@ class StatisticsPage extends StatefulWidget {
 }
 
 class _StatisticsPageState extends State<StatisticsPage> {
-  List<Map<String, dynamic>> _records = [];
+  List<FocusSession> _records = [];
   bool _isLoading = true;
 
   @override
@@ -29,7 +30,8 @@ class _StatisticsPageState extends State<StatisticsPage> {
     try {
       _records = await widget.appStateManager.getFocusRecords();
       // 按时间倒序排列
-      _records.sort((a, b) => b['startTime'].compareTo(a['startTime']));
+      _records
+          .sort((a, b) => b.focusRecord.start.compareTo(a.focusRecord.start));
     } catch (e) {
       // 错误处理
       if (mounted) {
@@ -91,21 +93,16 @@ class _StatisticsPageState extends State<StatisticsPage> {
     int totalSessions = _records.length;
     int totalMinutes = _records.fold(
       0,
-      (sum, record) => (sum + record['actualDuration']) as int,
+      (sum, session) => sum + session.focusRecord.durationFocus,
     );
     int totalPlannedMinutes = _records.fold(
       0,
-      (sum, record) => (sum + record['plannedDuration']) as int,
+      (sum, session) => sum + session.focusRecord.durationTarget,
     );
 
-    // 使用新的完成状态字段，对于旧记录使用兼容逻辑
-    int completedSessions = _records.where((record) {
-      // 如果有 isCompleted 字段，直接使用它
-      if (record.containsKey('isCompleted')) {
-        return record['isCompleted'] == true;
-      }
-      // 对于旧记录，使用原来的逻辑
-      return record['actualDuration'] >= record['plannedDuration'];
+    // 使用新的完成状态字段
+    int completedSessions = _records.where((session) {
+      return session.focusRecord.isCompleted;
     }).length;
 
     double completionRate =
@@ -142,10 +139,9 @@ class _StatisticsPageState extends State<StatisticsPage> {
       final date = now.subtract(Duration(days: i));
       final dateStr = DateFormat('MM-dd').format(date);
 
-      // 查找该日期的记录
-      final dayRecords = _records.where((record) {
-        final startTime =
-            DateTime.fromMillisecondsSinceEpoch(record['startTime']);
+// 查找该日期的记录
+      final dayRecords = _records.where((session) {
+        final startTime = session.focusRecord.start;
         return startTime.year == date.year &&
             startTime.month == date.month &&
             startTime.day == date.day;
@@ -154,7 +150,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
       // 计算当日专注时长
       int dailyMinutes = dayRecords.fold(
         0,
-        (sum, record) => (sum + record['actualDuration']) as int,
+        (sum, session) => sum + session.focusRecord.durationFocus,
       );
 
       dailyData.add({
@@ -262,24 +258,17 @@ class _StatisticsPageState extends State<StatisticsPage> {
     );
   }
 
-  Widget _buildRecordCard(Map<String, dynamic> record) {
-    final startTime = DateTime.fromMillisecondsSinceEpoch(record['startTime']);
-    final endTime = DateTime.fromMillisecondsSinceEpoch(record['endTime']);
-    final plannedDuration = record['plannedDuration'];
-    final actualDuration = record['actualDuration'];
-    final pauseCount = record['pauseCount'] ?? 0;
-    final exitCount = record['exitCount'] ?? 0;
-    final todoData = record['todoData'];
+  Widget _buildRecordCard(FocusSession session) {
+    final focusRecord = session.focusRecord;
+    final startTime = focusRecord.start;
+    final endTime = focusRecord.end;
+    final plannedDuration = focusRecord.durationTarget;
+    final actualDuration = focusRecord.durationFocus;
+    final interruptedDuration = focusRecord.durationInterrupted;
+    final focusTodos = session.focusTodos;
 
-    // 使用新的完成状态字段，对于旧记录使用兼容逻辑
-    bool isCompleted;
-    if (record.containsKey('isCompleted')) {
-      // 新记录直接使用 isCompleted 字段
-      isCompleted = record['isCompleted'] == true;
-    } else {
-      // 旧记录使用原来的逻辑
-      isCompleted = actualDuration >= plannedDuration;
-    }
+    // 使用新的完成状态字段
+    bool isCompleted = focusRecord.isCompleted;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -325,7 +314,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
                       // 添加删除按钮
                       icon: const Icon(Icons.delete_outline,
                           size: 20, color: Colors.red),
-                      onPressed: () => _showDeleteConfirmDialog(record),
+                      onPressed: () => _showDeleteConfirmDialog(session),
                       tooltip: '删除记录',
                     ),
                   ],
@@ -346,23 +335,22 @@ class _StatisticsPageState extends State<StatisticsPage> {
             Row(
               children: [
                 Expanded(
-                  child: _buildRecordStatRow('暂停', '$pauseCount 次'),
+                  child: _buildRecordStatRow('中断', '$interruptedDuration 分钟'),
                 ),
                 Expanded(
-                  child: _buildRecordStatRow('退出', '$exitCount 次'),
+                  child: _buildRecordStatRow('完成率',
+                      '${focusRecord.completionRate.toStringAsFixed(1)}%'),
                 ),
               ],
             ),
-            if (todoData != null) ...[
+            if (focusTodos.isNotEmpty) ...[
               const SizedBox(height: 4),
               const Text(
                 '关联任务:',
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
-              if (todoData is List)
-                for (var todo in todoData) _buildTodoInfoRow(todo)
-              else if (todoData is Map)
-                _buildTodoInfoRow(Map<String, dynamic>.from(todoData)),
+              for (var focusTodo in focusTodos)
+                _buildFocusTodoInfoRow(focusTodo),
             ],
           ],
         ),
@@ -370,8 +358,8 @@ class _StatisticsPageState extends State<StatisticsPage> {
     );
   }
 
-  // 添加删除确认对话框
-  void _showDeleteConfirmDialog(Map<String, dynamic> record) {
+// 添加删除确认对话框
+  void _showDeleteConfirmDialog(FocusSession session) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -385,7 +373,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              _deleteRecord(record);
+              _deleteRecord(session);
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('删除'),
@@ -395,10 +383,10 @@ class _StatisticsPageState extends State<StatisticsPage> {
     );
   }
 
-  // 添加删除记录方法
-  Future<void> _deleteRecord(Map<String, dynamic> record) async {
+// 添加删除记录方法
+  Future<void> _deleteRecord(FocusSession session) async {
     try {
-      await widget.appStateManager.deleteFocusRecord(record['id']);
+      await widget.appStateManager.deleteFocusRecord(session.focusRecord.id);
       await _loadRecords(); // 重新加载数据
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -432,10 +420,24 @@ class _StatisticsPageState extends State<StatisticsPage> {
     );
   }
 
-  Widget _buildTodoInfoRow(Map<String, dynamic> todo) {
-    final todoTitle = todo['todoTitle'];
-    final todoProgress = todo['todoProgress'];
-    final todoFocusedTime = todo['todoFocusedTime'];
+  Widget _buildFocusTodoInfoRow(FocusTodo focusTodo) {
+    final todoId = focusTodo.todoId;
+    final todoTitle = focusTodo.todoTitle;
+    final todoCategory = focusTodo.todoCategory;
+    final duration = focusTodo.duration;
+    final progressImprovement = focusTodo.progressImprovement;
+
+    // 构建任务显示文本
+    String taskDisplay;
+    if (todoTitle != null && todoTitle.isNotEmpty) {
+      taskDisplay = todoTitle;
+      if (todoCategory != null && todoCategory.isNotEmpty) {
+        taskDisplay += ' ($todoCategory)';
+      }
+    } else {
+      taskDisplay =
+          todoId.isNotEmpty ? '任务ID: ${todoId.substring(0, 8)}...' : '未知任务';
+    }
 
     return Padding(
       padding: const EdgeInsets.only(left: 8, top: 2),
@@ -443,20 +445,20 @@ class _StatisticsPageState extends State<StatisticsPage> {
         children: [
           Expanded(
             child: Text(
-              todoTitle ?? '未知任务',
+              taskDisplay,
               style: const TextStyle(fontSize: 14),
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          if (todoProgress != null)
+          if (progressImprovement > 0)
             Text(
-              '进度: $todoProgress/10',
+              '进度提升: +$progressImprovement',
               style: const TextStyle(fontSize: 12, color: Colors.green),
             ),
-          if (todoFocusedTime != null) ...[
+          if (duration > 0) ...[
             const SizedBox(width: 8),
             Text(
-              '专注: $todoFocusedTime分钟',
+              '专注: $duration分钟',
               style: const TextStyle(fontSize: 12, color: Colors.blue),
             ),
           ],

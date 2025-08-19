@@ -1,7 +1,7 @@
 name: unison
 description: "Track Progress, Homework Together"
 publish_to: 'none'
-version: 0.0.3+18
+version: 0.0.3+19
 
 environment:
   sdk: ^3.0.4
@@ -13,6 +13,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   shared_preferences: ^2.5.2
   intl: ^0.20.0
+  nanoid2: ^2.0.1
 
 dev_dependencies:
   flutter_test:

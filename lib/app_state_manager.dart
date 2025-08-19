@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'timer_manager.dart';
 import 'todo.dart';
 import 'todo_manager.dart';
+import 'focus.dart';
 
 class AppStateManager with ChangeNotifier {
   static const List<int> presetDurations = [
@@ -59,16 +60,21 @@ class AppStateManager with ChangeNotifier {
   }) async {
     List<Map<String, dynamic>>? todoData;
 
-    if (todos != null && progressList != null && focusedTimeList != null) {
+if (todos != null) {
       todoData = [];
       for (int i = 0; i < todos.length; i++) {
         todoData.add({
           'todoId': todos[i].id,
           'todoTitle': todos[i].title,
-          'todoProgress':
-              i < progressList.length ? progressList[i] : todos[i].progress,
+          'todoCategory': todos[i].category,
+          'todoProgressStart': todos[i].progress, // 保存开始进度
+          'todoProgress': progressList != null && i < progressList.length
+              ? progressList[i]
+              : todos[i].progress,
           'todoFocusedTime':
-              i < focusedTimeList.length ? focusedTimeList[i] : 0,
+              focusedTimeList != null && i < focusedTimeList.length
+                  ? focusedTimeList[i]
+                  : 0,
         });
       }
     }
@@ -86,12 +92,12 @@ class AppStateManager with ChangeNotifier {
   }
 
 // 新增：获取专注记录
-  Future<List<Map<String, dynamic>>> getFocusRecords() async {
+  Future<List<FocusSession>> getFocusRecords() async {
     return await _timerManager.getFocusRecords();
   }
 
   // 删除专注记录
-  Future<void> deleteFocusRecord(int id) async {
+  Future<void> deleteFocusRecord(String id) async {
     await _timerManager.deleteFocusRecord(id);
   }
 
