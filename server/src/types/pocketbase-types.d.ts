@@ -14,6 +14,7 @@ export enum Collections {
 	AppUsage = "appUsage",
 	Focus = "focus",
 	FocusTodo = "focusTodo",
+	Friends = "friends",
 	Todos = "todos",
 	Users = "users",
 }
@@ -127,13 +128,21 @@ export type FocusTodoRecord = {
 	updated?: IsoDateString
 }
 
+export type FriendsRecord = {
+	created?: IsoDateString
+	id: string
+	updated?: IsoDateString
+	user1: RecordIdString
+	user2: RecordIdString
+}
+
 export type TodosRecord = {
 	active?: boolean
 	archived?: boolean
 	category?: string
 	created?: IsoDateString
 	durationFocus?: number
-	estimation?: number
+	estimation: number
 	id: string
 	progress?: number
 	title: string
@@ -165,6 +174,7 @@ export type SuperusersResponse<Texpand = unknown> = Required<SuperusersRecord> &
 export type AppUsageResponse<Texpand = unknown> = Required<AppUsageRecord> & BaseSystemFields<Texpand>
 export type FocusResponse<Texpand = unknown> = Required<FocusRecord> & BaseSystemFields<Texpand>
 export type FocusTodoResponse<Texpand = unknown> = Required<FocusTodoRecord> & BaseSystemFields<Texpand>
+export type FriendsResponse<Texpand = unknown> = Required<FriendsRecord> & BaseSystemFields<Texpand>
 export type TodosResponse<Texpand = unknown> = Required<TodosRecord> & BaseSystemFields<Texpand>
 export type UsersResponse<Texpand = unknown> = Required<UsersRecord> & AuthSystemFields<Texpand>
 
@@ -179,6 +189,7 @@ export type CollectionRecords = {
 	appUsage: AppUsageRecord
 	focus: FocusRecord
 	focusTodo: FocusTodoRecord
+	friends: FriendsRecord
 	todos: TodosRecord
 	users: UsersRecord
 }
@@ -192,6 +203,7 @@ export type CollectionResponses = {
 	appUsage: AppUsageResponse
 	focus: FocusResponse
 	focusTodo: FocusTodoResponse
+	friends: FriendsResponse
 	todos: TodosResponse
 	users: UsersResponse
 }
@@ -208,6 +220,7 @@ export type TypedPocketBase = PocketBase & {
 	collection(idOrName: 'appUsage'): RecordService<AppUsageResponse>
 	collection(idOrName: 'focus'): RecordService<FocusResponse>
 	collection(idOrName: 'focusTodo'): RecordService<FocusTodoResponse>
+	collection(idOrName: 'friends'): RecordService<FriendsResponse>
 	collection(idOrName: 'todos'): RecordService<TodosResponse>
 	collection(idOrName: 'users'): RecordService<UsersResponse>
 }
