@@ -297,9 +297,9 @@ void main() {
 
       test('should remove listener correctly', () async {
         var notificationCount = 0;
-        final listener = () {
+        listener() {
           notificationCount++;
-        };
+        }
 
         todoManager.addListener(listener);
         await todoManager.addTodo('Test Todo');

@@ -58,6 +58,7 @@ void main() {
         durationTarget: 25,
         durationFocus: 25,
         durationInterrupted: 0,
+        isCompleted: true,
       );
 
       final focusRecord2 = FocusRecord(
@@ -67,6 +68,7 @@ void main() {
         durationTarget: 30,
         durationFocus: 20,
         durationInterrupted: 10,
+        isCompleted: true,
       );
 
       final sessions = [
@@ -110,6 +112,7 @@ void main() {
             durationTarget: 30,
             durationFocus: 30,
             durationInterrupted: 0,
+            isCompleted: true,
           ),
           focusTodos: [],
         ),
@@ -121,6 +124,7 @@ void main() {
             durationTarget: 25,
             durationFocus: 25,
             durationInterrupted: 0,
+            isCompleted: true,
           ),
           focusTodos: [],
         ),
@@ -153,6 +157,7 @@ void main() {
         durationTarget: 25,
         durationFocus: 25,
         durationInterrupted: 0,
+        isCompleted: true,
       );
 
       final focusTodo = FocusTodo(
@@ -202,6 +207,7 @@ void main() {
         durationTarget: 25,
         durationFocus: 25,
         durationInterrupted: 0,
+        isCompleted: true,
       );
 
       final session = FocusSession(
@@ -256,6 +262,7 @@ void main() {
         durationTarget: 25,
         durationFocus: 25,
         durationInterrupted: 0,
+        isCompleted: true,
       );
 
       final session = FocusSession(
@@ -315,6 +322,7 @@ void main() {
         durationTarget: 25,
         durationFocus: 25,
         durationInterrupted: 0,
+        isCompleted: true,
       );
 
       final incompleteRecord = FocusRecord(
@@ -324,6 +332,7 @@ void main() {
         durationTarget: 30,
         durationFocus: 20,
         durationInterrupted: 10,
+        isCompleted: true,
       );
 
       final sessions = [
@@ -357,6 +366,7 @@ void main() {
         durationTarget: 25,
         durationFocus: 25,
         durationInterrupted: 0,
+        isCompleted: true,
       );
 
       final focusTodo = FocusTodo(

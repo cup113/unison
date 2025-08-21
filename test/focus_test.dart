@@ -14,6 +14,7 @@ void main() {
         durationTarget: 30,
         durationFocus: 25,
         durationInterrupted: 5,
+        isCompleted: false,
         userId: 'user-123',
       );
 
@@ -34,6 +35,7 @@ void main() {
         durationTarget: 30,
         durationFocus: 25,
         durationInterrupted: 5,
+        isCompleted: false,
       );
 
       expect(focusRecord.durationFocusSeconds, 25 * 60);
@@ -49,6 +51,7 @@ void main() {
         durationTarget: 30,
         durationFocus: 25,
         durationInterrupted: 5,
+        isCompleted: false,
       );
 
       final focusRecord2 = FocusRecord(
@@ -58,6 +61,7 @@ void main() {
         durationTarget: 30,
         durationFocus: 30,
         durationInterrupted: 0,
+        isCompleted: true,
       );
 
       expect(focusRecord1.completionRate, 25 / 30 * 100);
@@ -72,6 +76,7 @@ void main() {
         durationTarget: 30,
         durationFocus: 25,
         durationInterrupted: 5,
+        isCompleted: false,
       );
 
       final focusRecord2 = FocusRecord(
@@ -81,6 +86,7 @@ void main() {
         durationTarget: 30,
         durationFocus: 30,
         durationInterrupted: 0,
+        isCompleted: true,
       );
 
       expect(focusRecord1.isCompleted, false);
@@ -96,6 +102,7 @@ void main() {
         durationFocus: 25,
         durationInterrupted: 5,
         userId: 'user-123',
+        isCompleted: true,
       );
 
       final map = original.toMap();
@@ -108,6 +115,7 @@ void main() {
       expect(deserialized.durationFocus, original.durationFocus);
       expect(deserialized.durationInterrupted, original.durationInterrupted);
       expect(deserialized.userId, original.userId);
+      expect(deserialized.isCompleted, original.isCompleted);
     });
 
     test('should copy with new values correctly', () {
@@ -118,6 +126,7 @@ void main() {
         durationTarget: 30,
         durationFocus: 25,
         durationInterrupted: 5,
+        isCompleted: true,
       );
 
       final copied = original.copyWith(
@@ -129,6 +138,7 @@ void main() {
       expect(copied.start, original.start);
       expect(copied.end, original.end);
       expect(copied.durationTarget, original.durationTarget);
+      expect(copied.isCompleted, original.isCompleted);
       expect(copied.durationFocus, 30);
       expect(copied.durationInterrupted, 0);
     });
@@ -241,6 +251,7 @@ void main() {
         durationTarget: 30,
         durationFocus: 25,
         durationInterrupted: 5,
+        isCompleted: true,
       );
 
       final focusTodos = [
@@ -272,6 +283,7 @@ void main() {
         durationTarget: 30,
         durationFocus: 25,
         durationInterrupted: 5,
+        isCompleted: true,
       );
 
       final focusTodos = [
@@ -311,6 +323,7 @@ void main() {
         durationTarget: 30,
         durationFocus: 25,
         durationInterrupted: 5,
+        isCompleted: true,
       );
 
       final focusSession = FocusSession(
@@ -331,6 +344,7 @@ void main() {
         durationTarget: 30,
         durationFocus: 25,
         durationInterrupted: 5,
+        isCompleted: true,
       );
 
       final focusTodos = [
