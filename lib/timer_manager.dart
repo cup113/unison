@@ -292,7 +292,8 @@ class TimerManager with ChangeNotifier {
               (_state.remainingSeconds ?? _state.selectedDuration! * 60)) ~/
           60;
 
-      if (actualDurationMinutes > 0) {
+      if (actualDurationMinutes > 0 && !finished) {
+        // TODO: Currently, when finished, there is another call, and it should be unified later.
         saveFocusRecord(
           startTime: _state.startTime!,
           endTime: endTime,
