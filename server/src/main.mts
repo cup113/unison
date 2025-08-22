@@ -7,6 +7,7 @@ import 'express-async-errors';
 import httpErrors from 'http-errors';
 import logger from './services/logging.mjs';
 import { contract } from './types/contract.mjs';
+import AuthRouteHandler from './routes/auth.mjs';
 
 const app = express();
 const PORT = 4132;
@@ -21,9 +22,18 @@ app.use((req, res, next) => {
 const s = initServer();
 createExpressEndpoints(contract, s.router(contract, {
   auth: {
-  }
+    async register(para) {
+      return await new AuthRouteHandler.AuthRegisterHandler().handle(para);
+    },
+    async login(para) {
+      return new AuthRouteHandler.AuthLoginHandler().handle(para);
+    },
+    async refresh(para) {
+      return new AuthRouteHandler.AuthRefreshHandler().handle(para);
+    }
+  },
 }), app);
 
 app.listen(PORT, () => {
-  logger.info(`Server is running on http://localhost:${PORT}/`);
+  logger.info(`[server] Running on http://localhost:${PORT}/`);
 });
