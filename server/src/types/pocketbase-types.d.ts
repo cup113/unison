@@ -112,6 +112,7 @@ export type FocusRecord = {
 	durationTarget: number
 	end: IsoDateString
 	id: string
+	isCompleted?: boolean
 	start: IsoDateString
 	updated?: IsoDateString
 	user?: RecordIdString
@@ -156,7 +157,6 @@ export type UsersRecord = {
 	created?: IsoDateString
 	email: string
 	emailVisibility?: boolean
-	friends?: RecordIdString[]
 	id: string
 	name?: string
 	password: string
