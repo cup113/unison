@@ -14,7 +14,6 @@
 		"express-async-errors": "^3.1.1",
 		"http-errors": "^2.0.0",
 		"pocketbase": "^0.26.2",
-		"valibot": "^1.1.0",
 		"winston": "^3.17.0",
 		"winston-daily-rotate-file": "^5.0.0",
 		"zod": "^3.25.76"

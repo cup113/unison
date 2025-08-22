@@ -1,117 +1,116 @@
-import * as v from "valibot";
+import z from "zod";
 
-const idSchema = v.pipe(v.string(), v.length(15));
-const baseCollectionSchema = v.object({
-    id: v.string(),
-    created: v.optional(v.string()),
-    updated: v.optional(v.string()),
-});
-
-const userLoginSchema = v.object({
-    email: v.pipe(v.string(), v.email()),
-    password: v.pipe(v.string(), v.length(64)), // sha256 hex string
-});
-const userCreationSchema = v.object({
-    ...userLoginSchema.entries,
-    name: v.pipe(v.string(), v.minLength(3), v.maxLength(20)),
-});
-const baseUserSchema = v.object({
-    ...baseCollectionSchema.entries,
-    name: v.string(),
-    email: v.string(),
-});
-const userFriendSchema = v.omit(baseUserSchema, ["id", "email"]);
-const userSchema = v.object({
-    ...baseUserSchema.entries,
-    friends: v.array(userFriendSchema),
+const idSchema = z.string().length(15);
+const baseCollectionSchema = z.object({
+    id: z.string(),
+    created: z.string().optional(),
+    updated: z.string().optional(),
 });
 
-const appUsageCreationSchema = v.object({
-    appName: v.string(),
-    duration: v.pipe(v.number(), v.minValue(1)),
-    start: v.pipe(v.string(), v.isoDateTime()),
-    end: v.pipe(v.string(), v.isoDateTime()),
+const userLoginSchema = z.object({
+    email: z.string().email(),
+    password: z.string().length(64), // sha256 hex string
 });
-const appUsageSchema = v.object({
-    ...baseCollectionSchema.entries,
-    appName: v.string(),
-    duration: v.number(),
-    start: v.string(),
-    end: v.string(),
+const userCreationSchema = userLoginSchema.extend({
+    name: z.string().min(3).max(20),
+});
+const baseUserSchema = baseCollectionSchema.extend({
+    name: z.string(),
+    email: z.string(),
+});
+const userFriendSchema = baseUserSchema.omit({ id: true, email: true });
+const userSchema = baseUserSchema.extend({});
+
+const appUsageCreationSchema = z.object({
+    appName: z.string(),
+    duration: z.number().min(1),
+    start: z.string().datetime(),
+    end: z.string().datetime(),
+});
+const appUsageSchema = baseCollectionSchema.extend({
+    appName: z.string(),
+    duration: z.number(),
+    start: z.string(),
+    end: z.string(),
 });
 
-const focusCreationSchema = v.object({
-    durationTarget: v.pipe(v.number(), v.minValue(1)),
-    durationFocus: v.pipe(v.number(), v.minValue(1)),
-    durationInterrupted: v.number(),
-    start: v.pipe(v.string(), v.isoDateTime()),
-    end: v.pipe(v.string(), v.isoDateTime()),
+const focusCreationSchema = z.object({
+    durationTarget: z.number().min(1),
+    durationInterrupted: z.number(),
+    start: z.string().datetime(),
+    end: z.string().datetime(),
 });
-const focusSchema = v.object({
-    ...baseCollectionSchema.entries,
-    durationTarget: v.number(),
-    durationFocus: v.number(),
-    durationInterrupted: v.number(),
-    start: v.string(),
-    end: v.string(),
+const focusSchema = baseCollectionSchema.extend({
+    durationTarget: z.number(),
+    durationFocus: z.number(),
+    durationInterrupted: z.number(),
+    start: z.string(),
+    end: z.string(),
 });
 
-const focusTodoCreationSchema = v.object({
-    duration: v.pipe(v.number(), v.minValue(1)),
-    progressStart: v.number(),
-    progressEnd: v.number(),
+const focusTodoCreationSchema = z.object({
+    duration: z.number().min(1),
+    progressStart: z.number(),
+    progressEnd: z.number(),
     todo: idSchema,
     focus: idSchema,
 });
-const focusTodoSchema = v.object({
-    ...baseCollectionSchema.entries,
-    duration: v.number(),
-    progressStart: v.number(),
-    progressEnd: v.number(),
+const focusTodoSchema = baseCollectionSchema.extend({
+    duration: z.number(),
+    progressStart: z.number(),
+    progressEnd: z.number(),
     todo: idSchema,
     focus: idSchema,
 });
 
-const todoCreationSchema = v.object({
-    title: v.pipe(v.string(), v.minLength(3), v.maxLength(128)),
-    category: v.pipe(v.string(), v.maxLength(64)),
-    estimation: v.pipe(v.number(), v.minValue(1)),
-    active: v.boolean(),
-    total: v.pipe(v.number(), v.minValue(1)),
+const todoCreationSchema = z.object({
+    title: z.string().min(1).max(128),
+    category: z.string().max(64),
+    estimation: z.number().min(1),
+    active: z.boolean(),
+    total: z.number().min(1),
 });
-const todoSchema = v.object({
-    ...baseCollectionSchema.entries,
-    title: v.string(),
-    category: v.string(),
-    estimation: v.number(),
-    active: v.boolean(),
-    total: v.number(),
-    progress: v.number(),
-    durationFocus: v.number(),
+const todoSchema = baseCollectionSchema.extend({
+    title: z.string(),
+    category: z.string(),
+    estimation: z.number(),
+    active: z.boolean(),
+    total: z.number(),
+    progress: z.number(),
+    durationFocus: z.number(),
 });
 
 
 const schemas = {
     auth: {
         login: userLoginSchema,
-        result: v.object({
-            token: v.string(),
+        result: z.object({
+            token: z.string(),
             user: userSchema,
         }),
-        refresh: v.object({
-            token: v.string(),
-            userID: v.string(),
+        refresh: z.object({
+            token: z.string(),
         })
     },
-    error: {
-        main: v.object({
-            code: v.string(),
-            message: v.string(),
+    headers: {
+        general: z.object({
+            authorization: z.string().startsWith("Bearer "),
         }),
+    },
+    error: {
+        main: z.object({
+            code: z.string(),
+            message: z.string(),
+        }),
+        unknown: z.object({
+            code: z.literal("UNKNOWN"),
+            message: z.string(),
+        })
     },
     user: {
         creation: userCreationSchema,
         main: userSchema,
+        friends: z.array(userFriendSchema),
     },
     appUsage: {
         creation: appUsageCreationSchema,
@@ -130,5 +129,7 @@ const schemas = {
         main: todoSchema,
     },
 };
+
+export type Friend = z.infer<typeof userFriendSchema>;
 
 export default schemas;
