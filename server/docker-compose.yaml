@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  fastapi:
+    build:
+      context: .
+      dockerfile: Dockerfile.fastapi
+    ports:
+      - "4132:4132"
+    restart: always
+    depends_on:
+      - pocketbase
+    environment:
+      - APP_ENV=production
+      - POCKETBASE_URL=http://pocketbase:4123
+
+  pocketbase:
+    build:
+      context: .
+      dockerfile: Dockerfile.pocketbase
+    container_name: pocketbase
+    ports:
+      - "4133:4133"
+    volumes:
+      - pocketbase_data:/db/pb_data
+    restart: always

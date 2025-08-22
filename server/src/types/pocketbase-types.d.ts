@@ -130,8 +130,10 @@ export type FocusTodoRecord = {
 }
 
 export type FriendsRecord = {
+	accepted?: boolean
 	created?: IsoDateString
 	id: string
+	refuseReason: string
 	updated?: IsoDateString
 	user1: RecordIdString
 	user2: RecordIdString

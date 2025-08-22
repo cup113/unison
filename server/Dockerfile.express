@@ -1,0 +1,13 @@
+# Note: ./types/pocketbase-types.d.ts should be generated manually before pushing to github
+FROM node:22
+
+WORKDIR /app
+RUN npm install -g pnpm
+
+COPY server ./server
+RUN cd server && \
+    pnpm install --frozen-lockfile
+RUN cd server && \
+    pnpm run build
+EXPOSE 4127
+CMD ["node", "server/dist/main.mjs"]
