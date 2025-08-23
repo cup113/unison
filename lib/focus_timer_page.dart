@@ -1,26 +1,24 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'todo.dart';
 import 'todo_manager.dart';
 import 'todo_list_widget.dart';
 import 'timer_manager.dart';
 import 'setup_view.dart';
 import 'timer_view.dart';
-import 'statistics_page.dart';
 import 'app_state_manager.dart';
 
-class FocusTimerPage extends StatefulWidget {
-  const FocusTimerPage({super.key});
+class FocusTab extends StatefulWidget {
+  final AppStateManager appStateManager;
+
+  const FocusTab({super.key, required this.appStateManager});
 
   @override
-  State<FocusTimerPage> createState() => _FocusTimerPageState();
+  State<FocusTab> createState() => _FocusTabState();
 }
 
-class _FocusTimerPageState extends State<FocusTimerPage>
-    with WidgetsBindingObserver {
+class _FocusTabState extends State<FocusTab> {
   late final TimerManager _timerManager;
   final TodoManager _todoManager = TodoManager();
-  late final AppStateManager _appStateManager;
   bool _isLoading = true;
 
   @override
@@ -30,15 +28,8 @@ class _FocusTimerPageState extends State<FocusTimerPage>
   }
 
   Future<void> _initManagers() async {
-    _timerManager = TimerManager();
+    _timerManager = widget.appStateManager.timerManager;
     await _todoManager.loadFromStorage();
-    await _timerManager.loadFromStorage();
-
-    // 初始化 AppStateManager
-    _appStateManager = AppStateManager(
-      timerManager: _timerManager,
-      todoManager: _todoManager,
-    );
 
     // 添加监听器以重建UI
     _timerManager.addListener(() {
@@ -49,8 +40,6 @@ class _FocusTimerPageState extends State<FocusTimerPage>
       }
     });
 
-    WidgetsBinding.instance.addObserver(this);
-
     setState(() {
       _isLoading = false;
     });
@@ -58,9 +47,8 @@ class _FocusTimerPageState extends State<FocusTimerPage>
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    _appStateManager.dispose();
-    _timerManager.dispose();
+    // Don't dispose the timer manager here since it's shared
+    // The main tab page will handle disposal
     super.dispose();
   }
 
@@ -215,7 +203,7 @@ class _FocusTimerPageState extends State<FocusTimerPage>
         focusedTimeList.add(adjustedDuration);
       }
 
-      await _appStateManager.saveFocusRecord(
+      await widget.appStateManager.saveFocusRecord(
         startTime: _timerManager.startTime!,
         endTime: endTime,
         plannedDuration: _timerManager.selectedDuration!,
@@ -231,75 +219,39 @@ class _FocusTimerPageState extends State<FocusTimerPage>
   }
 
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    super.didChangeAppLifecycleState(state);
-
-    if (state == AppLifecycleState.inactive) {
-      if (_timerManager.remainingSeconds != null &&
-          _timerManager.remainingSeconds! > 0) {
-        _timerManager.handleAppExit();
-      }
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Center(child: CircularProgressIndicator());
     }
 
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (bool didPop, Object? result) {
-        if (didPop) {
-          return;
-        }
-
-        // 不再在返回时增加退出计数
-        SystemNavigator.pop();
-      },
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Unison 专注计时器'),
-          backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.bar_chart),
-              onPressed: _showStatistics,
-            ),
-            IconButton(icon: const Icon(Icons.list), onPressed: _showTodoList),
-          ],
-        ),
-        body: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 300),
-          switchInCurve: Curves.easeInOut,
-          switchOutCurve: Curves.easeInOut,
-          child: Center(
-            key: ValueKey<String>(
-                _timerManager.remainingSeconds == null ? 'setup' : 'timer'),
-            child: _timerManager.remainingSeconds == null
-                ? SetupView(
-                    appStateManager: _appStateManager,
-                  )
-                : TimerView(
-                    appStateManager: _appStateManager,
-                    selectedDuration: _timerManager.selectedDuration!,
-                    remainingSeconds: _timerManager.remainingSeconds!,
-                    isPaused: _timerManager.isPaused,
-                    exitCount: _timerManager.exitCount,
-                    onTimerComplete: _showTimerCompleteDialog,
-                  ),
-          ),
-        ),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('专注'),
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        actions: [
+          IconButton(icon: const Icon(Icons.list), onPressed: _showTodoList),
+        ],
       ),
-    );
-  }
-
-  void _showStatistics() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => StatisticsPage(appStateManager: _appStateManager),
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300),
+        switchInCurve: Curves.easeInOut,
+        switchOutCurve: Curves.easeInOut,
+        child: Center(
+          key: ValueKey<String>(
+              _timerManager.remainingSeconds == null ? 'setup' : 'timer'),
+          child: _timerManager.remainingSeconds == null
+              ? SetupView(
+                  appStateManager: widget.appStateManager,
+                )
+              : TimerView(
+                  appStateManager: widget.appStateManager,
+                  selectedDuration: _timerManager.selectedDuration!,
+                  remainingSeconds: _timerManager.remainingSeconds!,
+                  isPaused: _timerManager.isPaused,
+                  exitCount: _timerManager.exitCount,
+                  onTimerComplete: _showTimerCompleteDialog,
+                ),
+        ),
       ),
     );
   }

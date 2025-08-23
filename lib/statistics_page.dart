@@ -3,16 +3,16 @@ import 'package:intl/intl.dart';
 import 'app_state_manager.dart';
 import 'focus.dart';
 
-class StatisticsPage extends StatefulWidget {
+class StatisticsTab extends StatefulWidget {
   final AppStateManager appStateManager;
 
-  const StatisticsPage({super.key, required this.appStateManager});
+  const StatisticsTab({super.key, required this.appStateManager});
 
   @override
-  State<StatisticsPage> createState() => _StatisticsPageState();
+  State<StatisticsTab> createState() => _StatisticsTabState();
 }
 
-class _StatisticsPageState extends State<StatisticsPage> {
+class _StatisticsTabState extends State<StatisticsTab> {
   List<FocusSession> _records = [];
   bool _isLoading = true;
 
@@ -52,7 +52,8 @@ class _StatisticsPageState extends State<StatisticsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('统计数据'),
+        title: const Text('统计'),
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
           IconButton(icon: const Icon(Icons.refresh), onPressed: _loadRecords),
         ],
@@ -139,7 +140,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
       final date = now.subtract(Duration(days: i));
       final dateStr = DateFormat('MM-dd').format(date);
 
-// 查找该日期的记录
+      // 查找该日期的记录
       final dayRecords = _records.where((session) {
         final startTime = session.focusRecord.start;
         return startTime.year == date.year &&
@@ -358,7 +359,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
     );
   }
 
-// 添加删除确认对话框
+  // 添加删除确认对话框
   void _showDeleteConfirmDialog(FocusSession session) {
     showDialog(
       context: context,
@@ -383,7 +384,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
     );
   }
 
-// 添加删除记录方法
+  // 添加删除记录方法
   Future<void> _deleteRecord(FocusSession session) async {
     try {
       await widget.appStateManager.deleteFocusRecord(session.focusRecord.id);

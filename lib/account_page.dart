@@ -1,0 +1,466 @@
+import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'app_state_manager.dart';
+
+class AccountTab extends StatefulWidget {
+  final AppStateManager appStateManager;
+
+  const AccountTab({super.key, required this.appStateManager});
+
+  @override
+  State<AccountTab> createState() => _AccountTabState();
+}
+
+class _AccountTabState extends State<AccountTab> {
+  bool _isLoggedIn = false;
+  String _username = '';
+  String _email = '';
+  bool _isLoading = true;
+  bool _syncEnabled = false;
+  PackageInfo? _packageInfo;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAccountStatus();
+    _loadAppInfo();
+  }
+
+  Future<void> _loadAppInfo() async {
+    final packageInfo = await PackageInfo.fromPlatform();
+    setState(() {
+      _packageInfo = packageInfo;
+    });
+  }
+
+  Future<void> _loadAccountStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _isLoggedIn = prefs.getBool('is_logged_in') ?? false;
+      _username = prefs.getString('username') ?? '';
+      _email = prefs.getString('email') ?? '';
+      _syncEnabled = prefs.getBool('sync_enabled') ?? false;
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _saveAccountStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('is_logged_in', _isLoggedIn);
+    await prefs.setString('username', _username);
+    await prefs.setString('email', _email);
+    await prefs.setBool('sync_enabled', _syncEnabled);
+  }
+
+  void _showLoginDialog() {
+    final TextEditingController emailController = TextEditingController();
+    final TextEditingController passwordController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('登录'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: emailController,
+              decoration: const InputDecoration(
+                labelText: '邮箱',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.emailAddress,
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: passwordController,
+              decoration: const InputDecoration(
+                labelText: '密码',
+                border: OutlineInputBorder(),
+              ),
+              obscureText: true,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () {
+              if (emailController.text.isNotEmpty &&
+                  passwordController.text.isNotEmpty) {
+                setState(() {
+                  _isLoggedIn = true;
+                  _username = emailController.text.split('@')[0];
+                  _email = emailController.text;
+                });
+                _saveAccountStatus();
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('登录成功')),
+                );
+              }
+            },
+            child: const Text('登录'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showRegisterDialog() {
+    final TextEditingController usernameController = TextEditingController();
+    final TextEditingController emailController = TextEditingController();
+    final TextEditingController passwordController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('注册'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: usernameController,
+              decoration: const InputDecoration(
+                labelText: '用户名',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: emailController,
+              decoration: const InputDecoration(
+                labelText: '邮箱',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.emailAddress,
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: passwordController,
+              decoration: const InputDecoration(
+                labelText: '密码',
+                border: OutlineInputBorder(),
+              ),
+              obscureText: true,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () {
+              if (usernameController.text.isNotEmpty &&
+                  emailController.text.isNotEmpty &&
+                  passwordController.text.isNotEmpty) {
+                setState(() {
+                  _isLoggedIn = true;
+                  _username = usernameController.text;
+                  _email = emailController.text;
+                });
+                _saveAccountStatus();
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('注册成功')),
+                );
+              }
+            },
+            child: const Text('注册'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _logout() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('确认退出'),
+        content: const Text('确定要退出登录吗？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () {
+              setState(() {
+                _isLoggedIn = false;
+                _username = '';
+                _email = '';
+                _syncEnabled = false;
+              });
+              _saveAccountStatus();
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('已退出登录')),
+              );
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('退出'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('账户'),
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildAccountHeader(),
+            const SizedBox(height: 24),
+            _buildAccountActions(),
+            const SizedBox(height: 24),
+            _buildSyncSettings(),
+            const SizedBox(height: 24),
+            _buildAppInfo(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAccountHeader() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 40,
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              child: Text(
+                _isLoggedIn ? _username[0].toUpperCase() : '?',
+                style: const TextStyle(
+                  fontSize: 32,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _isLoggedIn ? _username : '未登录',
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  if (_isLoggedIn) ...[
+                    Text(
+                      _email,
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.green,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Text(
+                        '已登录',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ] else ...[
+                    Text(
+                      '登录以同步数据',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAccountActions() {
+    return Card(
+      child: Column(
+        children: [
+          if (!_isLoggedIn) ...[
+            ListTile(
+              leading: const Icon(Icons.login),
+              title: const Text('登录'),
+              onTap: _showLoginDialog, // TODO mock
+            ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.person_add),
+              title: const Text('注册'),
+              onTap: _showRegisterDialog,
+            ),
+          ] else ...[
+            ListTile(
+              leading: const Icon(Icons.edit),
+              title: const Text('编辑资料'),
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('编辑资料功能开发中')),
+                );
+              },
+            ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.logout),
+              title: const Text('退出登录'),
+              onTap: _logout,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSyncSettings() {
+    return Card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.all(16),
+            child: Text(
+              '同步设置',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          SwitchListTile(
+            title: const Text('启用数据同步'),
+            subtitle: const Text('自动同步专注记录和任务数据'),
+            value: _syncEnabled,
+            onChanged: (value) {
+              if (!_isLoggedIn) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('请先登录以启用同步')),
+                );
+                return;
+              }
+              setState(() {
+                _syncEnabled = value;
+              });
+              _saveAccountStatus();
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.sync),
+            title: const Text('立即同步'),
+            subtitle: const Text('手动同步本地数据到服务器'),
+            onTap: () {
+              if (!_isLoggedIn) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('请先登录')),
+                );
+                return;
+              }
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('同步功能开发中')),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.download),
+            title: const Text('下载数据'),
+            subtitle: const Text('从服务器下载数据到本地'),
+            onTap: () {
+              if (!_isLoggedIn) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('请先登录')),
+                );
+                return;
+              }
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('下载功能开发中')),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAppInfo() {
+    return Card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.all(16),
+            child: Text(
+              '应用信息',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.info),
+            title: const Text('关于'),
+            subtitle: Text('Unison ${_packageInfo?.version}'),
+            onTap: () {
+              showAboutDialog(
+                context: context,
+                applicationName: 'Unison',
+                applicationVersion:
+                    '${_packageInfo?.version} (${_packageInfo?.buildNumber})',
+                applicationLegalese: '© 2025 Jason Li',
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.help),
+            title: const Text('帮助与反馈'),
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('帮助功能开发中')),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
