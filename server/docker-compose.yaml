@@ -4,7 +4,7 @@ services:
   fastapi:
     build:
       context: .
-      dockerfile: Dockerfile.fastapi
+      dockerfile: ./server/Dockerfile.fastapi
     ports:
       - "4132:4132"
     restart: always
@@ -17,7 +17,7 @@ services:
   pocketbase:
     build:
       context: .
-      dockerfile: Dockerfile.pocketbase
+      dockerfile: ./server/Dockerfile.pocketbase
     container_name: pocketbase
     ports:
       - "4133:4133"
