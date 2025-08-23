@@ -4,7 +4,6 @@ import compression from 'compression';
 import bodyParser from 'body-parser';
 import timeout from 'connect-timeout';
 import 'express-async-errors';
-import httpErrors from 'http-errors';
 import logger from './services/logging.mjs';
 import { contract } from './types/contract.mjs';
 import AuthRouteHandler from './routes/auth.mjs';
@@ -16,9 +15,6 @@ app.use(timeout('30s'));
 app.use(compression());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use((req, res, next) => {
-  next(new httpErrors.NotFound());
-});
 const s = initServer();
 createExpressEndpoints(contract, s.router(contract, {
   auth: {
@@ -33,7 +29,6 @@ createExpressEndpoints(contract, s.router(contract, {
     }
   },
 }), app);
-
 app.listen(PORT, () => {
   logger.info(`[server] Running on http://localhost:${PORT}/`);
 });

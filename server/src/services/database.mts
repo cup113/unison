@@ -27,7 +27,6 @@ export class PocketBaseService implements DatabaseService {
         this.pb = new PocketBase(POCKETBASE_URL);
         this.users = this.pb.collection("users");
         this.friends = this.pb.collection("friends");
-        logger.info(`[pocketbase] URL=${POCKETBASE_URL}`);
     }
 
     static sanitize(str: string) {
@@ -61,6 +60,7 @@ export class PocketBaseService implements DatabaseService {
         if (!this.pb.authStore.isValid) {
             throw new Error(`Auth Failed (Invalid Token ${token})`);
         }
+        logger.info(`[pocketbase] Auth refresh success for user ${record.username}(id=${record.id})`)
         return {
             token,
             user: record,
