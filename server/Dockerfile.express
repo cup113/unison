@@ -9,5 +9,5 @@ RUN cd server && \
     pnpm install --frozen-lockfile
 RUN cd server && \
     pnpm run build
-EXPOSE 4127
+EXPOSE 4132
 CMD ["node", "server/dist/main.mjs"]
