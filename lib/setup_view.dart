@@ -46,14 +46,9 @@ class SetupView extends StatelessWidget {
               );
             }).toList(),
           ),
-          const SizedBox(height: 40),
+          const SizedBox(height: 30),
           const Divider(height: 1, thickness: 1),
           const SizedBox(height: 20),
-          const Text(
-            '当前任务',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 10),
           ActiveTodoView(todoManager: appStateManager.todoManager),
         ],
       ),

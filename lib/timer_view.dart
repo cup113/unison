@@ -65,13 +65,14 @@ class _TimerViewState extends State<TimerView> {
                   child: _buildTimerDisplay(),
                 ),
               ),
+              const SizedBox(height: 10),
               _buildAddTimeButtons(timerManager),
               _buildTimerControls(timerManager, activeTodo),
               const SizedBox(height: 20),
               const Divider(height: 1, thickness: 1),
               const SizedBox(height: 20),
               ActiveTodoView(todoManager: todoManager),
-              const SizedBox(height: 30),
+              const SizedBox(height: 20),
             ],
           ),
         );
@@ -218,7 +219,6 @@ class _TimerViewState extends State<TimerView> {
             _buildCompleteButton(timerManager, canComplete),
           ],
         ),
-        const SizedBox(height: 20),
       ],
     );
   }

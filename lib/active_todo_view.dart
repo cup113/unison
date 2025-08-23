@@ -37,7 +37,7 @@ class _ActiveTodoViewState extends State<ActiveTodoView> {
 
   Widget _buildNoActiveTodoView() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 48.0, vertical: 16.0),
+      padding: const EdgeInsets.symmetric(horizontal: 40.0, vertical: 8.0),
       child: Column(
         children: [
           const Text(
@@ -81,8 +81,8 @@ class _ActiveTodoViewState extends State<ActiveTodoView> {
         if (activeTodo.isCompleted)
           Container(
             padding: const EdgeInsets.symmetric(
-              horizontal: 10,
-              vertical: 5,
+              horizontal: 8,
+              vertical: 4,
             ),
             decoration: BoxDecoration(
               color: Colors.green,
@@ -103,10 +103,7 @@ class _ActiveTodoViewState extends State<ActiveTodoView> {
     if (activeTodo.category.isNotEmpty) {
       tags.add(
         Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 8,
-            vertical: 4,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 8),
           decoration: BoxDecoration(
             color: Colors.blueGrey.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(6),
@@ -132,10 +129,7 @@ class _ActiveTodoViewState extends State<ActiveTodoView> {
     if (activeTodo.estimatedTime > 0) {
       tags.add(
         Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 8,
-            vertical: 4,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 8),
           decoration: BoxDecoration(
             color: Colors.deepOrange.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(6),
@@ -194,7 +188,7 @@ class _ActiveTodoViewState extends State<ActiveTodoView> {
             ),
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 8),
         Row(
           children: [
             const Icon(Icons.task, size: 16, color: Colors.grey),
@@ -217,7 +211,7 @@ class _ActiveTodoViewState extends State<ActiveTodoView> {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 360),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -234,9 +228,9 @@ class _ActiveTodoViewState extends State<ActiveTodoView> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildTodoTitle(activeTodo),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
                 _buildTodoTags(activeTodo),
-                const SizedBox(height: 16),
+                const SizedBox(height: 4),
                 _buildProgressSlider(activeTodo),
               ],
             ),
