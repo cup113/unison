@@ -3,6 +3,7 @@ import 'timer_manager.dart';
 import 'todo.dart';
 import 'todo_manager.dart';
 import 'focus.dart';
+import 'auth_service.dart';
 
 class AppStateManager with ChangeNotifier {
   static const List<int> presetDurations = [
@@ -24,12 +25,20 @@ class AppStateManager with ChangeNotifier {
 
   final TimerManager _timerManager;
   final TodoManager _todoManager;
+  final AuthService _authService;
+
+  bool _isLoggedIn = false;
+  String _username = '';
+  String _email = '';
+  bool _isInitialized = false;
 
   AppStateManager({
     required TimerManager timerManager,
     required TodoManager todoManager,
+    required AuthService authService,
   })  : _timerManager = timerManager,
-        _todoManager = todoManager {
+        _todoManager = todoManager,
+        _authService = authService {
     _timerManager.addListener(_onTimerChanged);
     _todoManager.addListener(_onTodoChanged);
   }
@@ -37,11 +46,70 @@ class AppStateManager with ChangeNotifier {
   TimerManager get timerManager => _timerManager;
   TodoManager get todoManager => _todoManager;
 
+  bool get isLoggedIn => _isLoggedIn;
+  String get username => _username;
+  String get email => _email;
+  bool get isInitialized => _isInitialized;
+
   void _onTimerChanged() {
     notifyListeners();
   }
 
   void _onTodoChanged() {
+    notifyListeners();
+  }
+
+  Future<void> initializeAuth() async {
+    try {
+      final userData = await _authService.initializeAuth();
+      if (userData != null) {
+        _isLoggedIn = true;
+        _username = userData['name'] ?? '';
+        _email = userData['email'] ?? '';
+      } else {
+        _isLoggedIn = false;
+        _username = '';
+        _email = '';
+      }
+    } catch (e) {
+      _isLoggedIn = false;
+      _username = '';
+      _email = '';
+    } finally {
+      _isInitialized = true;
+      notifyListeners();
+    }
+  }
+
+  Future<void> login(String email, String password) async {
+    await _authService.login(email, password);
+    await updateAuthState();
+  }
+
+  Future<void> register(String name, String email, String password) async {
+    await _authService.register(name, email, password);
+    await updateAuthState();
+  }
+
+  Future<void> logout() async {
+    await _authService.logout();
+    _isLoggedIn = false;
+    _username = '';
+    _email = '';
+    notifyListeners();
+  }
+
+  Future<void> updateAuthState() async {
+    final userData = await _authService.getUserData();
+    if (userData != null) {
+      _isLoggedIn = true;
+      _username = userData['name'] ?? '';
+      _email = userData['email'] ?? '';
+    } else {
+      _isLoggedIn = false;
+      _username = '';
+      _email = '';
+    }
     notifyListeners();
   }
 
@@ -60,7 +128,7 @@ class AppStateManager with ChangeNotifier {
   }) async {
     List<Map<String, dynamic>>? todoData;
 
-if (todos != null) {
+    if (todos != null) {
       todoData = [];
       for (int i = 0; i < todos.length; i++) {
         todoData.add({

@@ -18,6 +18,7 @@ class _AccountTabState extends State<AccountTab> {
   String _email = '';
   bool _isLoading = true;
   bool _syncEnabled = false;
+  bool _isAuthLoading = false;
   PackageInfo? _packageInfo;
 
   @override
@@ -35,21 +36,28 @@ class _AccountTabState extends State<AccountTab> {
   }
 
   Future<void> _loadAccountStatus() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _isLoggedIn = prefs.getBool('is_logged_in') ?? false;
-      _username = prefs.getString('username') ?? '';
-      _email = prefs.getString('email') ?? '';
-      _syncEnabled = prefs.getBool('sync_enabled') ?? false;
-      _isLoading = false;
-    });
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      setState(() {
+        _isLoggedIn = widget.appStateManager.isLoggedIn;
+        _username = widget.appStateManager.username;
+        _email = widget.appStateManager.email;
+        _syncEnabled = prefs.getBool('sync_enabled') ?? false;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoggedIn = false;
+        _username = '';
+        _email = '';
+        _syncEnabled = false;
+        _isLoading = false;
+      });
+    }
   }
 
   Future<void> _saveAccountStatus() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('is_logged_in', _isLoggedIn);
-    await prefs.setString('username', _username);
-    await prefs.setString('email', _email);
     await prefs.setBool('sync_enabled', _syncEnabled);
   }
 
@@ -59,54 +67,90 @@ class _AccountTabState extends State<AccountTab> {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('登录'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: emailController,
-              decoration: const InputDecoration(
-                labelText: '邮箱',
-                border: OutlineInputBorder(),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('登录'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: emailController,
+                decoration: const InputDecoration(
+                  labelText: '邮箱',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.emailAddress,
               ),
-              keyboardType: TextInputType.emailAddress,
+              const SizedBox(height: 16),
+              TextField(
+                controller: passwordController,
+                decoration: const InputDecoration(
+                  labelText: '密码',
+                  border: OutlineInputBorder(),
+                ),
+                obscureText: true,
+              ),
+              if (_isAuthLoading) ...[
+                const SizedBox(height: 16),
+                const CircularProgressIndicator(),
+              ],
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('取消'),
             ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: passwordController,
-              decoration: const InputDecoration(
-                labelText: '密码',
-                border: OutlineInputBorder(),
-              ),
-              obscureText: true,
+            TextButton(
+              onPressed: _isAuthLoading
+                  ? null
+                  : () async {
+                      if (emailController.text.isNotEmpty &&
+                          passwordController.text.isNotEmpty) {
+                        final currentContext = context;
+                        setState(() {
+                          _isAuthLoading = true;
+                        });
+
+                        try {
+                          await widget.appStateManager.login(
+                            emailController.text,
+                            passwordController.text,
+                          );
+
+                          if (currentContext.mounted) {
+                            Navigator.pop(currentContext);
+                          }
+                          await _loadAccountStatus();
+
+                          if (mounted && context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('登录成功')),
+                            );
+                          }
+                        } catch (e) {
+                          if (mounted && context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(e.toString())),
+                            );
+                          }
+                        } finally {
+                          setState(() {
+                            _isAuthLoading = false;
+                          });
+                        }
+                      }
+                    },
+              child: _isAuthLoading
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('登录'),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('取消'),
-          ),
-          TextButton(
-            onPressed: () {
-              if (emailController.text.isNotEmpty &&
-                  passwordController.text.isNotEmpty) {
-                setState(() {
-                  _isLoggedIn = true;
-                  _username = emailController.text.split('@')[0];
-                  _email = emailController.text;
-                });
-                _saveAccountStatus();
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('登录成功')),
-                );
-              }
-            },
-            child: const Text('登录'),
-          ),
-        ],
       ),
     );
   }
@@ -118,63 +162,100 @@ class _AccountTabState extends State<AccountTab> {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('注册'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: usernameController,
-              decoration: const InputDecoration(
-                labelText: '用户名',
-                border: OutlineInputBorder(),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('注册'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: usernameController,
+                decoration: const InputDecoration(
+                  labelText: '用户名',
+                  border: OutlineInputBorder(),
+                ),
               ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: emailController,
+                decoration: const InputDecoration(
+                  labelText: '邮箱',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.emailAddress,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: passwordController,
+                decoration: const InputDecoration(
+                  labelText: '密码',
+                  border: OutlineInputBorder(),
+                ),
+                obscureText: true,
+              ),
+              if (_isAuthLoading) ...[
+                const SizedBox(height: 16),
+                const CircularProgressIndicator(),
+              ],
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('取消'),
             ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: emailController,
-              decoration: const InputDecoration(
-                labelText: '邮箱',
-                border: OutlineInputBorder(),
-              ),
-              keyboardType: TextInputType.emailAddress,
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: passwordController,
-              decoration: const InputDecoration(
-                labelText: '密码',
-                border: OutlineInputBorder(),
-              ),
-              obscureText: true,
+            TextButton(
+              onPressed: _isAuthLoading
+                  ? null
+                  : () async {
+                      if (usernameController.text.isNotEmpty &&
+                          emailController.text.isNotEmpty &&
+                          passwordController.text.isNotEmpty) {
+                        final currentContext = context;
+                        setState(() {
+                          _isAuthLoading = true;
+                        });
+
+                        try {
+                          await widget.appStateManager.register(
+                            usernameController.text,
+                            emailController.text,
+                            passwordController.text,
+                          );
+
+                          if (currentContext.mounted) {
+                            Navigator.pop(currentContext);
+                          }
+                          await _loadAccountStatus();
+
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('注册成功')),
+                            );
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(e.toString())),
+                            );
+                          }
+                        } finally {
+                          setState(() {
+                            _isAuthLoading = false;
+                          });
+                        }
+                      }
+                    },
+              child: _isAuthLoading
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('注册'),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('取消'),
-          ),
-          TextButton(
-            onPressed: () {
-              if (usernameController.text.isNotEmpty &&
-                  emailController.text.isNotEmpty &&
-                  passwordController.text.isNotEmpty) {
-                setState(() {
-                  _isLoggedIn = true;
-                  _username = usernameController.text;
-                  _email = emailController.text;
-                });
-                _saveAccountStatus();
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('注册成功')),
-                );
-              }
-            },
-            child: const Text('注册'),
-          ),
-        ],
       ),
     );
   }
@@ -191,18 +272,27 @@ class _AccountTabState extends State<AccountTab> {
             child: const Text('取消'),
           ),
           TextButton(
-            onPressed: () {
-              setState(() {
-                _isLoggedIn = false;
-                _username = '';
-                _email = '';
-                _syncEnabled = false;
-              });
-              _saveAccountStatus();
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('已退出登录')),
-              );
+            onPressed: () async {
+              final currentContext = context;
+              try {
+                await widget.appStateManager.logout();
+                await _loadAccountStatus();
+                _saveAccountStatus();
+                if (currentContext.mounted) {
+                  Navigator.pop(currentContext);
+                }
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('已退出登录')),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('退出登录失败: ${e.toString()}')),
+                  );
+                }
+              }
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('退出'),
@@ -322,7 +412,7 @@ class _AccountTabState extends State<AccountTab> {
             ListTile(
               leading: const Icon(Icons.login),
               title: const Text('登录'),
-              onTap: _showLoginDialog, // TODO mock
+              onTap: _showLoginDialog,
             ),
             const Divider(),
             ListTile(

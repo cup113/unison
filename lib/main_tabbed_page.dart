@@ -7,6 +7,7 @@ import 'statistics_page.dart';
 import 'app_state_manager.dart';
 import 'timer_manager.dart';
 import 'todo_manager.dart';
+import 'auth_service.dart';
 
 class MainTabbedPage extends StatefulWidget {
   const MainTabbedPage({super.key});
@@ -33,6 +34,7 @@ class _MainTabbedPageState extends State<MainTabbedPage>
   Future<void> _initManagers() async {
     _timerManager = TimerManager();
     _todoManager = TodoManager();
+    final authService = AuthService();
 
     await _todoManager.loadFromStorage();
     await _timerManager.loadFromStorage();
@@ -40,7 +42,10 @@ class _MainTabbedPageState extends State<MainTabbedPage>
     _appStateManager = AppStateManager(
       timerManager: _timerManager,
       todoManager: _todoManager,
+      authService: authService,
     );
+
+    await _appStateManager.initializeAuth();
 
     _tabController = TabController(
       length: 4,

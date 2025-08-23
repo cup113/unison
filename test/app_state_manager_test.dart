@@ -4,6 +4,7 @@ import 'package:unison/app_state_manager.dart';
 import 'package:unison/timer_manager.dart';
 import 'package:unison/todo_manager.dart';
 import 'package:unison/todo.dart';
+import 'package:unison/auth_service.dart';
 
 void main() {
   group('AppStateManager', () {
@@ -23,6 +24,7 @@ void main() {
       appStateManager = AppStateManager(
         timerManager: timerManager,
         todoManager: todoManager,
+        authService: AuthService(),
       );
     });
 
