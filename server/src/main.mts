@@ -3,6 +3,7 @@ import express from 'express';
 import compression from 'compression';
 import bodyParser from 'body-parser';
 import timeout from 'connect-timeout';
+import cors from 'cors';
 import 'express-async-errors';
 import logger from './services/logging.mjs';
 import { contract } from './types/contract.mjs';
@@ -15,6 +16,7 @@ app.use(timeout('30s'));
 app.use(compression());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(cors());
 const s = initServer();
 createExpressEndpoints(contract, s.router(contract, {
   auth: {
