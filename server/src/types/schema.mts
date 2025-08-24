@@ -19,13 +19,20 @@ const baseUserSchema = baseCollectionSchema.extend({
     email: z.string(),
 });
 const userFriendSchema = baseUserSchema
-    .omit({ email: true })
-    .extend({ accepted: z.boolean() });
+    .omit({ email: true, created: true })
+    .extend({
+        accepted: z.boolean(),
+        refuseReason: z.string(),
+        acceptable: z.boolean(),
+        relationId: idSchema,
+    });
 const userSchema = baseUserSchema.extend({});
 const userFriendRequestSchema = z.object({
     userID: idSchema,
     targetUserID: idSchema,
 });
+const userFriendRequestRawSchema = userFriendRequestSchema.omit({ userID: true });
+const userFriendApproveSchema = z.object({ id: idSchema });
 const userFriendRefuseSchema = z.object({
     relation: idSchema,
     reason: z.string().max(256),
@@ -107,6 +114,9 @@ const schemas = {
             authorization: z.string().startsWith("Bearer "),
         }),
     },
+    response: {
+        empty: z.object({}),
+    },
     error: {
         main: z.object({
             code: z.string(),
@@ -119,8 +129,11 @@ const schemas = {
     },
     user: {
         creation: userCreationSchema,
+        friend: userFriendSchema,
         friends: z.array(userFriendSchema),
         friendRequest: userFriendRequestSchema,
+        friendRequestRaw: userFriendRequestRawSchema,
+        friendApprove: userFriendApproveSchema,
         friendRefuse: userFriendRefuseSchema,
     },
     appUsage: {

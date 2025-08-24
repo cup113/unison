@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import '../services/friends_service.dart';
+import '../models/friend.dart';
 
 class SocialTab extends StatefulWidget {
   const SocialTab({super.key});
@@ -9,16 +11,16 @@ class SocialTab extends StatefulWidget {
 }
 
 class _SocialTabState extends State<SocialTab> {
-  List<Map<String, dynamic>> _friends = [];
-  List<Map<String, dynamic>> _activities = [];
+  List<Friend> _friends = [];
+  List<Map<String, dynamic>> _activities = []; // TODO make it a class
   Timer? _activityTimer;
   bool _isLoading = true;
+  final FriendsService _friendsService = FriendsService();
 
   @override
   void initState() {
     super.initState();
     _loadFriends();
-    _startActivitySimulation();
   }
 
   @override
@@ -28,83 +30,27 @@ class _SocialTabState extends State<SocialTab> {
   }
 
   Future<void> _loadFriends() async {
-    // Simulate loading friends from storage/server
-    await Future.delayed(const Duration(seconds: 1));
-
-    if (!mounted) return;
-
-    setState(() {
-      _friends = [
-        {
-          'id': '1',
-          'name': '张三',
-          'status': '专注中',
-          'focusTime': 25,
-          'isOnline': true,
-        },
-        {
-          'id': '2',
-          'name': '李四',
-          'status': '休息中',
-          'focusTime': 0,
-          'isOnline': true,
-        },
-        {
-          'id': '3',
-          'name': '王五',
-          'status': '离线',
-          'focusTime': 0,
-          'isOnline': false,
-        },
-      ];
-      _isLoading = false;
-    });
-  }
-
-  void _startActivitySimulation() {
-    // Simulate activity updates every 6 seconds (10 times per minute)
-    _activityTimer = Timer.periodic(const Duration(seconds: 6), (timer) {
-      if (mounted) {
-        _addRandomActivity();
-      }
-    });
-  }
-
-  void _addRandomActivity() {
-    if (!mounted) return;
-
-    final activities = [
-      {'type': 'focus_start', 'message': '开始专注', 'icon': '🎯'},
-      {'type': 'focus_complete', 'message': '完成专注', 'icon': '✅'},
-      {'type': 'task_complete', 'message': '完成任务', 'icon': '📋'},
-      {'type': 'achievement', 'message': '获得成就', 'icon': '🏆'},
-    ];
-
-    if (_friends.isNotEmpty) {
-      final randomFriend =
-          _friends[DateTime.now().millisecond % _friends.length];
-      final randomActivity =
-          activities[DateTime.now().second % activities.length];
+    try {
+      final friends = await _friendsService.getFriendsList();
+      if (!mounted) return;
 
       setState(() {
-        _activities.insert(0, {
-          'id': DateTime.now().millisecondsSinceEpoch.toString(),
-          'friend': randomFriend,
-          'activity': randomActivity,
-          'timestamp': DateTime.now(),
-        });
-
-        // Keep only last 50 activities
-        if (_activities.length > 50) {
-          _activities = _activities.take(50).toList();
-        }
+        _friends = friends;
+        _isLoading = false;
       });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('加载好友列表失败: $e')),
+      );
     }
   }
 
   void _showAddFriendDialog() {
-    final TextEditingController nameController = TextEditingController();
-    final TextEditingController statusController = TextEditingController();
+    final TextEditingController userIdController = TextEditingController();
 
     showDialog(
       context: context,
@@ -114,17 +60,70 @@ class _SocialTabState extends State<SocialTab> {
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
-              controller: nameController,
+              controller: userIdController,
               decoration: const InputDecoration(
-                labelText: '好友名称',
+                labelText: '好友用户ID',
                 border: OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 16),
+            const Text(
+              '请输入要添加的好友的用户ID',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () async {
+              if (userIdController.text.isNotEmpty) {
+                try {
+                  await _friendsService
+                      .sendFriendRequest(userIdController.text);
+                  if (!mounted) return;
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('好友请求已发送')),
+                    );
+                  }
+                } catch (e) {
+                  if (!mounted) return;
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('发送好友请求失败: $e')),
+                    );
+                  }
+                }
+              }
+            },
+            child: const Text('发送请求'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _removeFriend(String friendId) {
+    final TextEditingController reasonController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('删除好友'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('确定要删除这个好友吗？'),
+            const SizedBox(height: 16),
             TextField(
-              controller: statusController,
+              controller: reasonController,
               decoration: const InputDecoration(
-                labelText: '状态消息',
+                labelText: '原因（可选）',
                 border: OutlineInputBorder(),
               ),
             ),
@@ -136,50 +135,104 @@ class _SocialTabState extends State<SocialTab> {
             child: const Text('取消'),
           ),
           TextButton(
-            onPressed: () {
-              if (nameController.text.isNotEmpty) {
-                if (!mounted) return;
+            onPressed: () async {
+              try {
+                await _friendsService.refuseFriendRequest(
+                    friendId, reasonController.text);
                 setState(() {
-                  _friends.add({
-                    'id': DateTime.now()
-                        .millisecondsSinceEpoch
-                        .toString(), // TODO mock
-                    'name': nameController.text,
-                    'status': statusController.text.isNotEmpty
-                        ? statusController.text
-                        : '在线',
-                    'focusTime': 0,
-                    'isOnline': true,
-                  });
+                  _friends.removeWhere((friend) => friend.id == friendId);
                 });
-                Navigator.pop(context);
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('好友已删除')),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('删除好友失败: $e')),
+                  );
+                }
               }
             },
-            child: const Text('添加'),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('删除'),
           ),
         ],
       ),
     );
   }
 
-  void _removeFriend(String friendId) {
+  Future<void> _acceptFriend(String friendRelationId) async {
+    try {
+      await _friendsService.approveFriendRequest(friendRelationId);
+      if (!mounted) return;
+
+      setState(() {
+        final friend =
+            _friends.firstWhere((f) => f.relationId == friendRelationId);
+        friend.accepted = true;
+        friend.acceptable = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('好友请求已接受')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('接受好友请求失败: $e')),
+      );
+    }
+  }
+
+  Future<void> _refuseFriend(String friendRelationId) async {
+    final TextEditingController reasonController = TextEditingController();
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('确认删除'),
-        content: const Text('确定要删除这个好友吗？'),
+        title: const Text('拒绝好友请求'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('确定要拒绝这个好友请求吗？'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: reasonController,
+              decoration: const InputDecoration(
+                labelText: '拒绝原因（可选）',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('取消'),
           ),
           TextButton(
-            onPressed: () {
-              if (!mounted) return;
-              setState(() {
-                _friends.removeWhere((friend) => friend['id'] == friendId);
-              });
-              Navigator.pop(context);
+            onPressed: () async {
+              try {
+                await _friendsService.refuseFriendRequest(
+                    friendRelationId, reasonController.text);
+                if (!mounted) return;
+
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('好友请求已拒绝')),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('删除好友失败: $e')),
+                  );
+                }
+              }
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('删除'),
@@ -254,23 +307,42 @@ class _SocialTabState extends State<SocialTab> {
         itemCount: _friends.length,
         itemBuilder: (context, index) {
           final friend = _friends[index];
+          final refused = friend.refuseReason?.isNotEmpty;
           return Card(
             child: ListTile(
-              title: Text(friend['name']),
-              subtitle: Text(friend['status']),
-              trailing: PopupMenuButton<String>(
-                onSelected: (value) {
-                  if (value == 'remove') {
-                    _removeFriend(friend['id']);
-                  }
-                },
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: 'remove',
-                    child: Text('删除好友'),
-                  ),
-                ],
-              ),
+              title: Text(friend.name),
+              subtitle: Text(friend.accepted
+                  ? '已接受'
+                  : (refused == true ? '已拒绝 ${friend.refuseReason}' : '等待接受')),
+              trailing: friend.acceptable == true
+                  ? Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.check, color: Colors.green),
+                          onPressed: () => _acceptFriend(friend.relationId),
+                          tooltip: '接受好友请求',
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, color: Colors.red),
+                          onPressed: () => _refuseFriend(friend.relationId),
+                          tooltip: '拒绝好友请求',
+                        ),
+                      ],
+                    )
+                  : PopupMenuButton<String>(
+                      onSelected: (value) {
+                        if (value == 'remove') {
+                          _removeFriend(friend.id);
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        const PopupMenuItem(
+                          value: 'remove',
+                          child: Text('删除好友'),
+                        ),
+                      ],
+                    ),
               onTap: () {
                 _showFriendDetails(friend);
               },
@@ -342,33 +414,20 @@ class _SocialTabState extends State<SocialTab> {
     );
   }
 
-  void _showFriendDetails(Map<String, dynamic> friend) {
+  void _showFriendDetails(Friend friend) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(friend['name']),
+        title: Text(friend.name),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      friend['isOnline'] ? '在线' : '离线',
-                      style: TextStyle(
-                        color: friend['isOnline'] ? Colors.green : Colors.grey,
-                      ),
-                    ),
-                    Text(friend['status']),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Text('今日专注: ${friend['focusTime']} 分钟'),
+            Text('状态: ${friend.accepted ? '已接受' : '等待接受'}'),
+            if (friend.refuseReason != null && friend.refuseReason!.isNotEmpty)
+              Text('拒绝原因: ${friend.refuseReason}'),
+            if (friend.updated != null)
+              Text('更新时间: ${friend.updated!.toLocal()}'),
           ],
         ),
         actions: [

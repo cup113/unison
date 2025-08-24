@@ -16,6 +16,7 @@ class AppStateManager with ChangeNotifier {
   bool _isLoggedIn = false;
   String _username = '';
   String _email = '';
+  String _id = '';
   bool _isInitialized = false;
 
   AppStateManager({
@@ -36,6 +37,7 @@ class AppStateManager with ChangeNotifier {
   String get username => _username;
   String get email => _email;
   bool get isInitialized => _isInitialized;
+  String get id => _id;
 
   void _onTimerChanged() {
     notifyListeners();
@@ -52,15 +54,18 @@ class AppStateManager with ChangeNotifier {
         _isLoggedIn = true;
         _username = userData['name'] ?? '';
         _email = userData['email'] ?? '';
+        _id = userData['id'] ?? '';
       } else {
         _isLoggedIn = false;
         _username = '';
         _email = '';
+        _id = '';
       }
     } catch (e) {
       _isLoggedIn = false;
       _username = '';
       _email = '';
+      _id = '';
     } finally {
       _isInitialized = true;
       notifyListeners();
@@ -82,6 +87,7 @@ class AppStateManager with ChangeNotifier {
     _isLoggedIn = false;
     _username = '';
     _email = '';
+    _id = '';
     notifyListeners();
   }
 
@@ -91,15 +97,16 @@ class AppStateManager with ChangeNotifier {
       _isLoggedIn = true;
       _username = userData['name'] ?? '';
       _email = userData['email'] ?? '';
+      _id = userData['id'] ?? '';
     } else {
       _isLoggedIn = false;
       _username = '';
       _email = '';
+      _id = '';
     }
     notifyListeners();
   }
 
-  // 新增：保存专注记录，支持多个todo
   Future<void> saveFocusRecord({
     required DateTime startTime,
     required DateTime endTime,

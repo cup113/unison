@@ -43,18 +43,21 @@ export default abstract class RouteHandler<R extends AppRoute> {
         };
     }
 
-    protected async authorize(authorization?: string): Promise<boolean> {
+    protected async authorize(authorization?: string): Promise<false | z.infer<typeof schemas.auth.result>> {
         if (!authorization) {
             logger.warn(`[auth] No authorization included.`);
             return false;
         }
         const token = authorization.slice("Bearer ".length);
         try {
-            const { user } = await this.db.auth_refresh({
+            const { user, token: tokenNew } = await this.db.auth_refresh({
                 token,
             });
             logger.info(`[auth] Success for user ${user.id}/${user.name}`)
-            return true;
+            return {
+                token: tokenNew,
+                user,
+            };
         } catch (e) {
             logger.warn(`[auth] Invalid token: ${token}`);
             return false;

@@ -2,7 +2,7 @@ import PocketBase, { type RecordService } from 'pocketbase';
 import z from 'zod';
 import schemas, { type Friend } from '../types/schema.mjs';
 import type { TypedPocketBase, UsersResponse, FriendsResponse } from '../types/pocketbase-types.js';
-import logger from './logging.mjs';
+import RouteHandler from './route-handler.mjs';
 
 type AuthResult = z.infer<typeof schemas.auth.result>;
 
@@ -13,8 +13,8 @@ export abstract class DatabaseService {
 
     public abstract friends_list(userID: string): Promise<Friend[]>;
     public abstract friends_request(data: z.infer<typeof schemas.user.friendRequest>): Promise<void>;
-    public abstract friends_approve(friendRelationID: string): Promise<Friend>;
-    public abstract friends_refuse(data: z.infer<typeof schemas.user.friendRefuse>): Promise<void>;
+    public abstract friends_approve(friendRelationID: string, userID: string): Promise<Friend>;
+    public abstract friends_refuse(data: z.infer<typeof schemas.user.friendRefuse>, userID: string): Promise<void>;
 }
 
 export class PocketBaseService implements DatabaseService {
@@ -60,7 +60,6 @@ export class PocketBaseService implements DatabaseService {
         if (!this.pb.authStore.isValid) {
             throw new Error(`Auth Failed (Invalid Token ${token})`);
         }
-        logger.info(`[pocketbase] Auth refresh success for user ${record.username}(id=${record.id})`)
         return {
             token,
             user: record,
@@ -71,24 +70,26 @@ export class PocketBaseService implements DatabaseService {
         type Expand1 = FriendsResponse<{ user1: UsersResponse }>;
         type Expand2 = FriendsResponse<{ user2: UsersResponse }>;
 
-        const relations1 = await this.friends.getFullList<Expand1>({
-            filter: `user1.id=${userID}`,
-            expand: "user1",
-        });
-        const relations2 = await this.friends.getFullList<Expand2>({
-            filter: `user2.id=${userID}`,
+        const relations1 = await this.friends.getFullList<Expand2>({
+            filter: `user1.id="${userID}"`,
             expand: "user2",
         });
+        const relations2 = await this.friends.getFullList<Expand1>({
+            filter: `user2.id="${userID}"`,
+            expand: "user1",
+        });
         const friendsRaw = [
-            ...relations1.map(rel => ({ ...rel.expand.user1, accepted: rel.accepted })),
-            ...relations2.map(rel => ({ ...rel.expand.user2, accepted: rel.accepted })),
+            ...relations1.map(rel => ({ ...rel.expand.user2, accepted: rel.accepted, refuseReason: rel.refuseReason, acceptable: false, relationId: rel.id })),
+            ...relations2.map(rel => ({ ...rel.expand.user1, accepted: rel.accepted, refuseReason: rel.refuseReason, acceptable: true, relationId: rel.id })),
         ]
         return friendsRaw.map(friend => ({
             id: friend.id,
-            created: friend.created,
             updated: friend.updated,
             name: friend.name,
             accepted: friend.accepted,
+            refuseReason: friend.refuseReason,
+            acceptable: friend.acceptable,
+            relationId: friend.relationId
         }));
     }
 
@@ -100,30 +101,40 @@ export class PocketBaseService implements DatabaseService {
         });
     }
 
-    public async friends_approve(friendRelationID: string): Promise<Friend> {
+    public async friends_approve(friendRelationID: string, userID: string): Promise<Friend> {
+        type Expand = FriendsResponse<{ user1: UsersResponse }>;
+        const relationWithExpand = await this.friends.getOne<Expand>(friendRelationID, {
+            expand: "user1",
+        });
+
+
+        if (userID !== relationWithExpand.user2) {
+            throw new Error(`Not operated by person.`);
+        }
+
         const updatedRelation = await this.friends.update(friendRelationID, {
             accepted: true,
         });
 
-        type Expand = FriendsResponse<{ user1: UsersResponse; user2: UsersResponse }>;
-        const relationWithExpand = await this.friends.getOne<Expand>(friendRelationID, {
-            expand: "user1,user2",
-        });
-
-        const friendData = relationWithExpand.expand.user1.id === updatedRelation.user2
-            ? relationWithExpand.expand.user1
-            : relationWithExpand.expand.user2;
+        const friendData = relationWithExpand.expand.user1;
 
         return {
             id: friendData.id,
-            created: friendData.created,
             updated: friendData.updated,
             name: friendData.name,
-            accepted: updatedRelation.accepted,
+            accepted: true,
+            refuseReason: updatedRelation.refuseReason,
+            acceptable: true,
+            relationId: updatedRelation.id,
         };
     }
 
-    public async friends_refuse(data: z.infer<typeof schemas.user.friendRefuse>): Promise<void> {
+    public async friends_refuse(data: z.infer<typeof schemas.user.friendRefuse>, userID: string): Promise<void> {
+        const rawRelation = await this.friends.getOne(data.relation)
+        if (rawRelation.user2 !== userID) {
+            throw new Error(`Not operated by person.`);
+        }
+
         await this.friends.update(data.relation, {
             accepted: false,
             refuseReason: data.reason,

@@ -1,7 +1,7 @@
 name: unison
 description: "Unison - Focus timer & task management app with social features. Progress tracking, and friend system. Built with Flutter & Node.js."
 publish_to: 'none'
-version: 0.0.7+30
+version: 0.1.0+31
 
 environment:
   sdk: ^3.0.4

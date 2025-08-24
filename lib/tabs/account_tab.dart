@@ -344,7 +344,8 @@ class _AccountTabState extends ConsumerState<AccountTab> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildAccountHeader(isLoggedIn, username, email),
+            _buildAccountHeader(
+                isLoggedIn, username, email, appStateManager.id),
             const SizedBox(height: 24),
             _buildAccountActions(isLoggedIn, username, email),
             const SizedBox(height: 24),
@@ -355,7 +356,8 @@ class _AccountTabState extends ConsumerState<AccountTab> {
     );
   }
 
-  Widget _buildAccountHeader(bool isLoggedIn, String username, String email) {
+  Widget _buildAccountHeader(
+      bool isLoggedIn, String username, String email, String id) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -386,7 +388,7 @@ class _AccountTabState extends ConsumerState<AccountTab> {
                   ),
                   if (isLoggedIn) ...[
                     Text(
-                      email,
+                      '$email ($id)',
                       style: TextStyle(
                         fontSize: 16,
                         color: Colors.grey[600],
