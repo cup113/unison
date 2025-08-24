@@ -1,13 +1,27 @@
 import 'package:nanoid2/nanoid2.dart';
+import 'package:json_annotation/json_annotation.dart';
+import 'package:hive/hive.dart';
 
+part 'focus.g.dart';
+
+@JsonSerializable()
+@HiveType(typeId: 3)
 class FocusRecord {
+  @HiveField(0)
   final String id;
+  @HiveField(1)
   final DateTime start;
+  @HiveField(2)
   final DateTime end;
+  @HiveField(3)
   final int durationTarget; // 目标时长（分钟）
+  @HiveField(4)
   final int durationFocus; // 实际专注时长（分钟）
+  @HiveField(5)
   final int durationInterrupted; // 中断时长（分钟）
+  @HiveField(6)
   final bool isCompleted; // 显式完成状态，由用户操作指定
+  @HiveField(7)
   final String? userId; // 用户ID，用于服务端同步
 
   FocusRecord({
@@ -64,38 +78,31 @@ class FocusRecord {
     );
   }
 
-  FocusRecord copyWith({
-    String? id,
-    DateTime? start,
-    DateTime? end,
-    int? durationTarget,
-    int? durationFocus,
-    int? durationInterrupted,
-    bool? isCompleted,
-    String? userId,
-  }) {
-    return FocusRecord(
-      id: id ?? this.id,
-      start: start ?? this.start,
-      end: end ?? this.end,
-      durationTarget: durationTarget ?? this.durationTarget,
-      durationFocus: durationFocus ?? this.durationFocus,
-      durationInterrupted: durationInterrupted ?? this.durationInterrupted,
-      isCompleted: isCompleted ?? this.isCompleted,
-      userId: userId ?? this.userId,
-    );
-  }
+  factory FocusRecord.fromJson(Map<String, dynamic> json) =>
+      _$FocusRecordFromJson(json);
+
+  Map<String, dynamic> toJson() => _$FocusRecordToJson(this);
 }
 
+@JsonSerializable()
+@HiveType(typeId: 4)
 class FocusTodo {
+  @HiveField(0)
   final String id;
-  final String todoId; // 关联的Todo ID
-  final String focusId; // 关联的Focus ID
-  final int duration; // 专注时长（分钟）
-  final int progressStart; // 开始时的进度
-  final int progressEnd; // 结束时的进度
-  final String? todoTitle; // 标题（用于显示）
-  final String? todoCategory; // 类别（用于显示）
+  @HiveField(1)
+  final String todoId;
+  @HiveField(2)
+  final String focusId;
+  @HiveField(3)
+  final int duration;
+  @HiveField(4)
+  final int progressStart;
+  @HiveField(5)
+  final int progressEnd;
+  @HiveField(6)
+  final String? todoTitle;
+  @HiveField(7)
+  final String? todoCategory;
 
   FocusTodo({
     required this.id,
@@ -158,15 +165,28 @@ class FocusTodo {
       todoCategory: todoCategory ?? this.todoCategory,
     );
   }
+
+  factory FocusTodo.fromJson(Map<String, dynamic> json) =>
+      _$FocusTodoFromJson(json);
+
+  Map<String, dynamic> toJson() => _$FocusTodoToJson(this);
 }
 
+@JsonSerializable()
+@HiveType(typeId: 5)
 class AppUsage {
+  @HiveField(0)
   final String id;
-  final String appName; // 应用名称
-  final DateTime start; // 开始时间
-  final DateTime end; // 结束时间
-  final int duration; // 使用时长（分钟）
-  final String? userId; // 用户ID，用于服务端同步
+  @HiveField(1)
+  final String appName;
+  @HiveField(2)
+  final DateTime start;
+  @HiveField(3)
+  final DateTime end;
+  @HiveField(4)
+  final int duration;
+  @HiveField(5)
+  final String? userId;
 
   AppUsage({
     required this.id,
@@ -220,12 +240,21 @@ class AppUsage {
       userId: userId ?? this.userId,
     );
   }
+
+  factory AppUsage.fromJson(Map<String, dynamic> json) =>
+      _$AppUsageFromJson(json);
+
+  Map<String, dynamic> toJson() => _$AppUsageToJson(this);
 }
 
-// 专注会话数据传输对象，用于整合FocusRecord和相关的FocusTodo
+@JsonSerializable()
+@HiveType(typeId: 6)
 class FocusSession {
+  @HiveField(0)
   final FocusRecord focusRecord;
+  @HiveField(1)
   final List<FocusTodo> focusTodos;
+  @HiveField(2)
   final List<AppUsage>? appUsages; // 可选的应用使用记录
 
   FocusSession({
@@ -278,4 +307,9 @@ class FocusSession {
       appUsages: appUsages ?? this.appUsages,
     );
   }
+
+  factory FocusSession.fromJson(Map<String, dynamic> json) =>
+      _$FocusSessionFromJson(json);
+
+  Map<String, dynamic> toJson() => _$FocusSessionToJson(this);
 }

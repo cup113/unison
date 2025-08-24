@@ -1,12 +1,28 @@
+import 'package:json_annotation/json_annotation.dart';
+import 'package:hive/hive.dart';
+
+part 'todo.g.dart';
+
+@JsonSerializable()
+@HiveType(typeId: 1)
 class Todo {
+  @HiveField(0)
   final String id;
+  @HiveField(1)
   String title;
+  @HiveField(2)
   int progress; // 0-total的进度值，替代原来的isCompleted
+  @HiveField(3)
   bool isActive;
+  @HiveField(4)
   bool isArchived;
+  @HiveField(5)
   String category; // 类别字段
+  @HiveField(6)
   int estimatedTime; // 预计时间字段(以分钟为单位)
+  @HiveField(7)
   int focusedTime; // 已专注时间字段(以分钟为单位)
+  @HiveField(8)
   int total; // 进度总量，默认为 10
 
   Todo({
@@ -47,4 +63,8 @@ class Todo {
       total: total ?? this.total,
     );
   }
+
+  factory Todo.fromJson(Map<String, dynamic> json) => _$TodoFromJson(json);
+
+  Map<String, dynamic> toJson() => _$TodoToJson(this);
 }

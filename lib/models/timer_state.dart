@@ -1,10 +1,24 @@
+import 'package:json_annotation/json_annotation.dart';
+import 'package:hive/hive.dart';
+
+part 'timer_state.g.dart';
+
+@JsonSerializable()
+@HiveType(typeId: 2)
 class TimerState {
+  @HiveField(0)
   final int? selectedDuration; // 选定的持续时间（分钟）
+  @HiveField(1)
   final int? remainingSeconds; // 剩余秒数
+  @HiveField(2)
   final bool isPaused; // 是否暂停
+  @HiveField(3)
   final int exitCount; // 退出次数
+  @HiveField(4)
   final int pauseCount; // 暂停次数
+  @HiveField(5)
   final DateTime? startTime; // 开始时间
+  @HiveField(6)
   final DateTime? lastExitTime; // 上次退出时间
 
   TimerState({
@@ -64,4 +78,8 @@ class TimerState {
           : null,
     );
   }
+
+  factory TimerState.fromJson(Map<String, dynamic> json) => _$TimerStateFromJson(json);
+
+  Map<String, dynamic> toJson() => _$TimerStateToJson(this);
 }
