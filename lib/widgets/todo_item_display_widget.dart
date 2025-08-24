@@ -1,43 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/todo.dart';
 import '../services/todo_manager_interface.dart';
 import 'todo_editor_widget.dart';
+import '../providers.dart';
 
-class TodoItemDisplayWidget extends StatefulWidget {
+class TodoItemDisplayWidget extends ConsumerStatefulWidget {
   final Todo todo;
-  final TodoManagerInterface todoManager;
   final VoidCallback onTodoChanged;
 
   const TodoItemDisplayWidget({
     super.key,
     required this.todo,
-    required this.todoManager,
     required this.onTodoChanged,
   });
 
   @override
-  State<TodoItemDisplayWidget> createState() => _TodoItemDisplayWidgetState();
+  ConsumerState<TodoItemDisplayWidget> createState() =>
+      _TodoItemDisplayWidgetState();
 }
 
-class _TodoItemDisplayWidgetState extends State<TodoItemDisplayWidget> {
-  @override
-  void initState() {
-    super.initState();
-    widget.todoManager.addListener(_updateUI);
-  }
-
-  @override
-  void dispose() {
-    widget.todoManager.removeListener(_updateUI);
-    super.dispose();
-  }
-
-  void _updateUI() {
-    if (mounted) {
-      setState(() {});
-    }
-  }
-
+class _TodoItemDisplayWidgetState extends ConsumerState<TodoItemDisplayWidget> {
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -78,7 +61,8 @@ class _TodoItemDisplayWidgetState extends State<TodoItemDisplayWidget> {
             color: widget.todo.isActive ? Colors.orange : null,
           ),
           onPressed: () {
-            widget.todoManager.toggleActive(widget.todo.id);
+            final todoManager = ref.read(todoManagerProvider);
+            todoManager.toggleActive(widget.todo.id);
             widget.onTodoChanged();
           },
         ),
@@ -95,14 +79,16 @@ class _TodoItemDisplayWidgetState extends State<TodoItemDisplayWidget> {
             color: widget.todo.isArchived ? Colors.grey : null,
           ),
           onPressed: () {
-            widget.todoManager.toggleArchive(widget.todo.id);
+            final todoManager = ref.read(todoManagerProvider);
+            todoManager.toggleArchive(widget.todo.id);
             widget.onTodoChanged();
           },
         ),
         IconButton(
           icon: const Icon(Icons.delete),
           onPressed: () {
-            widget.todoManager.removeTodo(widget.todo.id);
+            final todoManager = ref.read(todoManagerProvider);
+            todoManager.removeTodo(widget.todo.id);
             widget.onTodoChanged();
           },
         ),
@@ -120,7 +106,6 @@ class _TodoItemDisplayWidgetState extends State<TodoItemDisplayWidget> {
             width: 300,
             child: TodoEditorWidget(
               todo: widget.todo,
-              todoManager: widget.todoManager,
               onTodoChanged: () {
                 Navigator.of(context).pop();
                 widget.onTodoChanged();
@@ -242,7 +227,8 @@ class _TodoItemDisplayWidgetState extends State<TodoItemDisplayWidget> {
               divisions: widget.todo.total,
               label: widget.todo.progress.toString(),
               onChanged: (value) {
-                widget.todoManager.setProgress(widget.todo.id, value.toInt());
+                final todoManager = ref.read(todoManagerProvider);
+                todoManager.setProgress(widget.todo.id, value.toInt());
                 widget.onTodoChanged();
               },
             ),

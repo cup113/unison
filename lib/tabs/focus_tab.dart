@@ -1,61 +1,33 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/todo.dart';
 import '../services/todo_manager_interface.dart';
 import '../widgets/todo_list_widget.dart';
-import '../services/timer_manager_interface.dart';
+
 import '../widgets/setup_view.dart';
 import '../widgets/timer_view.dart';
-import '../app_state_manager.dart';
+import '../providers.dart';
 
-class FocusTab extends StatefulWidget {
-  final AppStateManager appStateManager;
-
-  const FocusTab({super.key, required this.appStateManager});
+class FocusTab extends ConsumerStatefulWidget {
+  const FocusTab({super.key});
 
   @override
-  State<FocusTab> createState() => _FocusTabState();
+  ConsumerState<FocusTab> createState() => _FocusTabState();
 }
 
-class _FocusTabState extends State<FocusTab> {
-  late final TimerManagerInterface _timerManager;
-  late final TodoManagerInterface _todoManager;
-  bool _isLoading = true;
-
+class _FocusTabState extends ConsumerState<FocusTab> {
   @override
   void initState() {
     super.initState();
-    _initManagers();
-  }
-
-  Future<void> _initManagers() async {
-    _timerManager = widget.appStateManager.timerManager;
-    _todoManager = widget.appStateManager.todoManager;
-
-    // 添加监听器以重建UI
-    _timerManager.addListener(() {
-      if (mounted) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          setState(() {});
-        });
-      }
-    });
-
-    setState(() {
-      _isLoading = false;
-    });
-  }
-
-  @override
-  void dispose() {
-    // Don't dispose the timer manager here since it's shared
-    // The main tab page will handle disposal
-    super.dispose();
+    // No need for manual listener management with Riverpod
   }
 
   void _showTimerCompleteDialog() {
-    final activeTodo = _todoManager.getActiveTodo(includeCompleted: true);
-    int actualDuration = (_timerManager.selectedDuration ?? 0) -
-        (_timerManager.remainingSeconds ?? 0) ~/ 60;
+    final timerManager = ref.watch(timerManagerProvider);
+    final todoManager = ref.watch(todoManagerProvider);
+    final activeTodo = todoManager.getActiveTodo(includeCompleted: true);
+    int actualDuration = (timerManager.selectedDuration ?? 0) -
+        (timerManager.remainingSeconds ?? 0) ~/ 60;
 
     // 提升控制器和状态管理到外部
     final durationController =
@@ -101,7 +73,7 @@ class _FocusTabState extends State<FocusTab> {
                     if (context.mounted) {
                       Navigator.of(context).pop();
                     }
-                    _timerManager.cancelTimer(true);
+                    timerManager.cancelTimer(true);
                   },
                   child: const Text('确认'),
                 ),
@@ -178,18 +150,22 @@ class _FocusTabState extends State<FocusTab> {
     int adjustedDuration,
     int adjustedProgress,
   ) async {
+    final timerManager = ref.read(timerManagerProvider);
+    final todoManager = ref.read(todoManagerProvider);
+    final appStateManager = ref.read(appStateManagerProvider);
+
     // 更新TODO的进度和专注时间
     if (activeTodo != null) {
-      _todoManager.setProgress(activeTodo.id, adjustedProgress);
-      _todoManager.addFocusedTime(
+      await todoManager.setProgress(activeTodo.id, adjustedProgress);
+      await todoManager.addFocusedTime(
         activeTodo.id,
         adjustedDuration,
       );
     }
 
     // 使用AppStateManager保存专注记录
-    if (_timerManager.startTime != null &&
-        _timerManager.selectedDuration != null) {
+    if (timerManager.startTime != null &&
+        timerManager.selectedDuration != null) {
       final endTime = DateTime.now();
 
       // 收集需要保存的todo数据
@@ -203,13 +179,13 @@ class _FocusTabState extends State<FocusTab> {
         focusedTimeList.add(adjustedDuration);
       }
 
-      await widget.appStateManager.saveFocusRecord(
-        startTime: _timerManager.startTime!,
+      await appStateManager.saveFocusRecord(
+        startTime: timerManager.startTime!,
         endTime: endTime,
-        plannedDuration: _timerManager.selectedDuration!,
+        plannedDuration: timerManager.selectedDuration!,
         actualDuration: adjustedDuration,
-        pauseCount: _timerManager.pauseCount,
-        exitCount: _timerManager.exitCount,
+        pauseCount: timerManager.pauseCount,
+        exitCount: timerManager.exitCount,
         isCompleted: true, // 完成的计时器标记为已完成
         todos: todos.isNotEmpty ? todos : null,
         progressList: progressList.isNotEmpty ? progressList : null,
@@ -218,45 +194,7 @@ class _FocusTabState extends State<FocusTab> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('专注'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        actions: [
-          IconButton(icon: const Icon(Icons.list), onPressed: _showTodoList),
-        ],
-      ),
-      body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 300),
-        switchInCurve: Curves.easeInOut,
-        switchOutCurve: Curves.easeInOut,
-        child: Center(
-          key: ValueKey<String>(
-              _timerManager.remainingSeconds == null ? 'setup' : 'timer'),
-          child: _timerManager.remainingSeconds == null
-              ? SetupView(
-                  appStateManager: widget.appStateManager,
-                )
-              : TimerView(
-                  appStateManager: widget.appStateManager,
-                  selectedDuration: _timerManager.selectedDuration!,
-                  remainingSeconds: _timerManager.remainingSeconds!,
-                  isPaused: _timerManager.isPaused,
-                  exitCount: _timerManager.exitCount,
-                  onTimerComplete: _showTimerCompleteDialog,
-                ),
-        ),
-      ),
-    );
-  }
-
-  void _showTodoList() {
+  void _showTodoList(BuildContext context, TodoManagerInterface todoManager) {
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -266,9 +204,45 @@ class _FocusTabState extends State<FocusTab> {
             backgroundColor: Theme.of(context).colorScheme.inversePrimary,
           ),
           body: TodoListWidget(
-            todoManager: _todoManager,
             onTodoChanged: () => setState(() {}),
           ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final timerManager = ref.watch(timerManagerProvider);
+    final todoManager = ref.watch(todoManagerProvider);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('专注'),
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.list),
+            onPressed: () => _showTodoList(context, todoManager),
+          ),
+        ],
+      ),
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300),
+        switchInCurve: Curves.easeInOut,
+        switchOutCurve: Curves.easeInOut,
+        child: Center(
+          key: ValueKey<String>(
+              timerManager.remainingSeconds == null ? 'setup' : 'timer'),
+          child: timerManager.remainingSeconds == null
+              ? const SetupView()
+              : TimerView(
+                  selectedDuration: timerManager.selectedDuration!,
+                  remainingSeconds: timerManager.remainingSeconds!,
+                  isPaused: timerManager.isPaused,
+                  exitCount: timerManager.exitCount,
+                  onTimerComplete: _showTimerCompleteDialog,
+                ),
         ),
       ),
     );

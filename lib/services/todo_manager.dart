@@ -1,5 +1,6 @@
 import 'dart:collection';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:nanoid2/nanoid2.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unison/utils/list_extensions.dart';
@@ -8,7 +9,7 @@ import '../constants/app_constants.dart';
 import '../utils/app_errors.dart';
 import 'todo_manager_interface.dart';
 
-class TodoManager implements TodoManagerInterface {
+class TodoManager with ChangeNotifier implements TodoManagerInterface {
   final List<Todo> _todos = [];
   final List<VoidCallback> _listeners = [];
 
@@ -28,7 +29,8 @@ class TodoManager implements TodoManagerInterface {
   }
 
   void _notifyListeners() {
-    for (final listener in _listeners) {
+    final listeners = List<VoidCallback>.from(_listeners);
+    for (final listener in listeners) {
       listener();
     }
   }

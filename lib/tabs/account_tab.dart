@@ -1,21 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import '../app_state_manager.dart';
+import '../providers.dart';
 
-class AccountTab extends StatefulWidget {
-  final AppStateManager appStateManager;
-
-  const AccountTab({super.key, required this.appStateManager});
+class AccountTab extends ConsumerStatefulWidget {
+  const AccountTab({super.key});
 
   @override
-  State<AccountTab> createState() => _AccountTabState();
+  ConsumerState<AccountTab> createState() => _AccountTabState();
 }
 
-class _AccountTabState extends State<AccountTab> {
-  bool _isLoggedIn = false;
-  String _username = '';
-  String _email = '';
+class _AccountTabState extends ConsumerState<AccountTab> {
   bool _isLoading = true;
   bool _syncEnabled = false;
   bool _isAuthLoading = false;
@@ -39,17 +35,11 @@ class _AccountTabState extends State<AccountTab> {
     try {
       final prefs = await SharedPreferences.getInstance();
       setState(() {
-        _isLoggedIn = widget.appStateManager.isLoggedIn;
-        _username = widget.appStateManager.username;
-        _email = widget.appStateManager.email;
         _syncEnabled = prefs.getBool('sync_enabled') ?? false;
         _isLoading = false;
       });
     } catch (e) {
       setState(() {
-        _isLoggedIn = false;
-        _username = '';
-        _email = '';
         _syncEnabled = false;
         _isLoading = false;
       });
@@ -61,7 +51,7 @@ class _AccountTabState extends State<AccountTab> {
     await prefs.setBool('sync_enabled', _syncEnabled);
   }
 
-  void _showLoginDialog() {
+  void _showLoginDialog(bool isLoggedIn) {
     final TextEditingController emailController = TextEditingController();
     final TextEditingController passwordController = TextEditingController();
 
@@ -113,10 +103,10 @@ class _AccountTabState extends State<AccountTab> {
                         });
 
                         try {
-                          await widget.appStateManager.login(
-                            emailController.text,
-                            passwordController.text,
-                          );
+                          await ref.read(appStateManagerProvider).login(
+                                emailController.text,
+                                passwordController.text,
+                              );
 
                           if (currentContext.mounted) {
                             Navigator.pop(currentContext);
@@ -155,7 +145,7 @@ class _AccountTabState extends State<AccountTab> {
     );
   }
 
-  void _showRegisterDialog() {
+  void _showRegisterDialog(bool isLoggedIn) {
     final TextEditingController usernameController = TextEditingController();
     final TextEditingController emailController = TextEditingController();
     final TextEditingController passwordController = TextEditingController();
@@ -217,11 +207,11 @@ class _AccountTabState extends State<AccountTab> {
                         });
 
                         try {
-                          await widget.appStateManager.register(
-                            usernameController.text,
-                            emailController.text,
-                            passwordController.text,
-                          );
+                          await ref.read(appStateManagerProvider).register(
+                                usernameController.text,
+                                emailController.text,
+                                passwordController.text,
+                              );
 
                           if (currentContext.mounted) {
                             Navigator.pop(currentContext);
@@ -260,7 +250,7 @@ class _AccountTabState extends State<AccountTab> {
     );
   }
 
-  void _logout() {
+  void _logout(bool isLoggedIn) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -275,7 +265,7 @@ class _AccountTabState extends State<AccountTab> {
             onPressed: () async {
               final currentContext = context;
               try {
-                await widget.appStateManager.logout();
+                await ref.read(appStateManagerProvider).logout();
                 await _loadAccountStatus();
                 _saveAccountStatus();
                 if (currentContext.mounted) {
@@ -304,6 +294,11 @@ class _AccountTabState extends State<AccountTab> {
 
   @override
   Widget build(BuildContext context) {
+    final appStateManager = ref.watch(appStateManagerProvider);
+    final isLoggedIn = appStateManager.isLoggedIn;
+    final username = appStateManager.username;
+    final email = appStateManager.email;
+
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -318,11 +313,11 @@ class _AccountTabState extends State<AccountTab> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildAccountHeader(),
+            _buildAccountHeader(isLoggedIn, username, email),
             const SizedBox(height: 24),
-            _buildAccountActions(),
+            _buildAccountActions(isLoggedIn, username, email),
             const SizedBox(height: 24),
-            _buildSyncSettings(),
+            _buildSyncSettings(isLoggedIn),
             const SizedBox(height: 24),
             _buildAppInfo(),
           ],
@@ -331,7 +326,7 @@ class _AccountTabState extends State<AccountTab> {
     );
   }
 
-  Widget _buildAccountHeader() {
+  Widget _buildAccountHeader(bool isLoggedIn, String username, String email) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -341,7 +336,7 @@ class _AccountTabState extends State<AccountTab> {
               radius: 40,
               backgroundColor: Theme.of(context).colorScheme.primary,
               child: Text(
-                _isLoggedIn ? _username[0].toUpperCase() : '?',
+                isLoggedIn ? username[0].toUpperCase() : '?',
                 style: const TextStyle(
                   fontSize: 32,
                   color: Colors.white,
@@ -354,15 +349,15 @@ class _AccountTabState extends State<AccountTab> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    _isLoggedIn ? _username : '未登录',
+                    isLoggedIn ? username : '未登录',
                     style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  if (_isLoggedIn) ...[
+                  if (isLoggedIn) ...[
                     Text(
-                      _email,
+                      email,
                       style: TextStyle(
                         fontSize: 16,
                         color: Colors.grey[600],
@@ -404,21 +399,21 @@ class _AccountTabState extends State<AccountTab> {
     );
   }
 
-  Widget _buildAccountActions() {
+  Widget _buildAccountActions(bool isLoggedIn, String username, String email) {
     return Card(
       child: Column(
         children: [
-          if (!_isLoggedIn) ...[
+          if (!isLoggedIn) ...[
             ListTile(
               leading: const Icon(Icons.login),
               title: const Text('登录'),
-              onTap: _showLoginDialog,
+              onTap: () => _showLoginDialog(isLoggedIn),
             ),
             const Divider(),
             ListTile(
               leading: const Icon(Icons.person_add),
               title: const Text('注册'),
-              onTap: _showRegisterDialog,
+              onTap: () => _showRegisterDialog(isLoggedIn),
             ),
           ] else ...[
             ListTile(
@@ -434,7 +429,7 @@ class _AccountTabState extends State<AccountTab> {
             ListTile(
               leading: const Icon(Icons.logout),
               title: const Text('退出登录'),
-              onTap: _logout,
+              onTap: () => _logout(isLoggedIn),
             ),
           ],
         ],
@@ -442,7 +437,7 @@ class _AccountTabState extends State<AccountTab> {
     );
   }
 
-  Widget _buildSyncSettings() {
+  Widget _buildSyncSettings(bool isLoggedIn) {
     return Card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -462,7 +457,7 @@ class _AccountTabState extends State<AccountTab> {
             subtitle: const Text('自动同步专注记录和任务数据'),
             value: _syncEnabled,
             onChanged: (value) {
-              if (!_isLoggedIn) {
+              if (!isLoggedIn) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('请先登录以启用同步')),
                 );
@@ -479,7 +474,7 @@ class _AccountTabState extends State<AccountTab> {
             title: const Text('立即同步'),
             subtitle: const Text('手动同步本地数据到服务器'),
             onTap: () {
-              if (!_isLoggedIn) {
+              if (!isLoggedIn) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('请先登录')),
                 );
@@ -495,7 +490,7 @@ class _AccountTabState extends State<AccountTab> {
             title: const Text('下载数据'),
             subtitle: const Text('从服务器下载数据到本地'),
             onTap: () {
-              if (!_isLoggedIn) {
+              if (!isLoggedIn) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('请先登录')),
                 );

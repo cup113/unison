@@ -1,15 +1,18 @@
 import 'dart:collection';
+import 'package:flutter/foundation.dart';
 import '../models/todo.dart';
 
 typedef VoidCallback = void Function();
 
-abstract class TodoManagerInterface {
+abstract class TodoManagerInterface with ChangeNotifier {
   UnmodifiableListView<Todo> get todos;
   List<Todo> get notArchivedTodos;
   List<Todo> get archivedTodos;
   Todo? getActiveTodo({bool includeCompleted = false});
 
+  @override
   void addListener(VoidCallback listener);
+  @override
   void removeListener(VoidCallback listener);
 
   Future<void> loadFromStorage();

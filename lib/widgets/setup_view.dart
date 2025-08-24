@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
-import '../app_state_manager.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'active_todo_widget.dart';
+import '../providers.dart';
+import '../app_state_manager.dart';
 
-class SetupView extends StatelessWidget {
-  final AppStateManager appStateManager;
-
+class SetupView extends ConsumerWidget {
   const SetupView({
     super.key,
-    required this.appStateManager,
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24.0),
       child: Column(
@@ -30,8 +29,10 @@ class SetupView extends StatelessWidget {
             runSpacing: 16,
             children: AppStateManager.presetDurations.map((minutes) {
               return ElevatedButton(
-                onPressed: () =>
-                    appStateManager.timerManager.startTimer(minutes),
+                onPressed: () {
+                  final timerManager = ref.read(timerManagerProvider);
+                  timerManager.startTimer(minutes);
+                },
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 8,
@@ -49,7 +50,7 @@ class SetupView extends StatelessWidget {
           const SizedBox(height: 30),
           const Divider(height: 1, thickness: 1),
           const SizedBox(height: 20),
-          ActiveTodoWidget(todoManager: appStateManager.todoManager),
+          const ActiveTodoWidget(),
         ],
       ),
     );

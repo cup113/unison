@@ -1,26 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/todo.dart';
 import '../services/todo_manager_interface.dart';
+import '../providers.dart';
 
-class TodoEditorWidget extends StatefulWidget {
+class TodoEditorWidget extends ConsumerStatefulWidget {
   final Todo? todo; // 如果为null，则为新建任务
-  final TodoManagerInterface todoManager;
   final VoidCallback onTodoChanged;
   final VoidCallback onCancel;
 
   const TodoEditorWidget({
     super.key,
     this.todo,
-    required this.todoManager,
     required this.onTodoChanged,
     required this.onCancel,
   });
 
   @override
-  State<TodoEditorWidget> createState() => _TodoEditorWidgetState();
+  ConsumerState<TodoEditorWidget> createState() => _TodoEditorWidgetState();
 }
 
-class _TodoEditorWidgetState extends State<TodoEditorWidget> {
+class _TodoEditorWidgetState extends ConsumerState<TodoEditorWidget> {
   late TextEditingController _titleController;
   late TextEditingController _categoryController;
   late TextEditingController _estimatedTimeController;
@@ -173,9 +173,10 @@ class _TodoEditorWidgetState extends State<TodoEditorWidget> {
       total = parsedTotal;
     }
 
+    final todoManager = ref.read(todoManagerProvider);
     if (widget.todo == null) {
       // 添加新任务
-      widget.todoManager.addTodo(
+      todoManager.addTodo(
         _titleController.text.trim(),
         category: _categoryController.text.trim(),
         estimatedTime: estimatedTime,
@@ -183,7 +184,7 @@ class _TodoEditorWidgetState extends State<TodoEditorWidget> {
       );
     } else {
       // 更新现有任务
-      widget.todoManager.updateTodo(
+      todoManager.updateTodo(
         widget.todo!.id,
         _titleController.text.trim(),
         category: _categoryController.text.trim(),

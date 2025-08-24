@@ -1,18 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import '../app_state_manager.dart';
 import '../models/focus.dart';
+import '../providers.dart';
 
-class StatisticsTab extends StatefulWidget {
-  final AppStateManager appStateManager;
-
-  const StatisticsTab({super.key, required this.appStateManager});
+class StatisticsTab extends ConsumerStatefulWidget {
+  const StatisticsTab({super.key});
 
   @override
-  State<StatisticsTab> createState() => _StatisticsTabState();
+  ConsumerState<StatisticsTab> createState() => _StatisticsTabState();
 }
 
-class _StatisticsTabState extends State<StatisticsTab> {
+class _StatisticsTabState extends ConsumerState<StatisticsTab> {
   List<FocusSession> _records = [];
   bool _isLoading = true;
 
@@ -23,12 +22,9 @@ class _StatisticsTabState extends State<StatisticsTab> {
   }
 
   Future<void> _loadRecords() async {
-    setState(() {
-      _isLoading = true;
-    });
-
     try {
-      _records = await widget.appStateManager.getFocusRecords();
+      final appStateManager = ref.read(appStateManagerProvider);
+      _records = await appStateManager.getFocusRecords();
       // 按时间倒序排列
       _records
           .sort((a, b) => b.focusRecord.start.compareTo(a.focusRecord.start));
@@ -387,7 +383,8 @@ class _StatisticsTabState extends State<StatisticsTab> {
   // 添加删除记录方法
   Future<void> _deleteRecord(FocusSession session) async {
     try {
-      await widget.appStateManager.deleteFocusRecord(session.focusRecord.id);
+      final appStateManager = ref.read(appStateManagerProvider);
+      await appStateManager.deleteFocusRecord(session.focusRecord.id);
       await _loadRecords(); // 重新加载数据
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

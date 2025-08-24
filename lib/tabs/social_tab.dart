@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import '../app_state_manager.dart';
 
 class SocialTab extends StatefulWidget {
-  final AppStateManager appStateManager;
-
-  const SocialTab({super.key, required this.appStateManager});
+  const SocialTab({super.key});
 
   @override
   State<SocialTab> createState() => _SocialTabState();

@@ -1,34 +1,36 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/todo_manager_interface.dart';
 import 'todo_item_display_widget.dart';
 import 'todo_editor_widget.dart';
+import '../providers.dart';
 
-class TodoListWidget extends StatefulWidget {
-  final TodoManagerInterface todoManager;
+class TodoListWidget extends ConsumerStatefulWidget {
   final VoidCallback onTodoChanged;
 
   const TodoListWidget({
     super.key,
-    required this.todoManager,
     required this.onTodoChanged,
   });
 
   @override
-  State<TodoListWidget> createState() => _TodoListWidgetState();
+  ConsumerState<TodoListWidget> createState() => _TodoListWidgetState();
 }
 
-class _TodoListWidgetState extends State<TodoListWidget> {
+class _TodoListWidgetState extends ConsumerState<TodoListWidget> {
   bool _isAddingTodo = false;
-
+  late final TodoManagerInterface _todoManager;
+  
   @override
   void initState() {
     super.initState();
-    widget.todoManager.addListener(_onTodoChanged);
+    _todoManager = ref.read(todoManagerProvider);
+    _todoManager.addListener(_onTodoChanged);
   }
 
   @override
   void dispose() {
-    widget.todoManager.removeListener(_onTodoChanged);
+    _todoManager.removeListener(_onTodoChanged);
     super.dispose();
   }
 
@@ -64,7 +66,6 @@ class _TodoListWidgetState extends State<TodoListWidget> {
   Widget _buildAddTodoSection() {
     if (_isAddingTodo) {
       return TodoEditorWidget(
-        todoManager: widget.todoManager,
         onTodoChanged: _handleTodoChanged,
         onCancel: _cancelAddTodo,
       );
@@ -87,10 +88,10 @@ class _TodoListWidgetState extends State<TodoListWidget> {
   }
 
   Widget _buildTodoList() {
+    final todoManager = ref.watch(todoManagerProvider);
     return Expanded(
-      child: widget.todoManager.todos.isEmpty
-          ? _buildEmptyState()
-          : _buildTodoListView(),
+      child:
+          todoManager.todos.isEmpty ? _buildEmptyState() : _buildTodoListView(),
     );
   }
 
@@ -104,19 +105,19 @@ class _TodoListWidgetState extends State<TodoListWidget> {
   }
 
   Widget _buildTodoListView() {
+    final todoManager = ref.watch(todoManagerProvider);
     return ListView(
       children: [
         // 未归档的任务
-        ...widget.todoManager.notArchivedTodos.map(
+        ...todoManager.notArchivedTodos.map(
           (todo) => TodoItemDisplayWidget(
             todo: todo,
-            todoManager: widget.todoManager,
             onTodoChanged: widget.onTodoChanged,
           ),
         ),
 
         // 已归档的任务标题
-        if (widget.todoManager.archivedTodos.isNotEmpty) ...[
+        if (todoManager.archivedTodos.isNotEmpty) ...[
           const Padding(
             padding: EdgeInsets.all(16.0),
             child: Text(
@@ -129,10 +130,9 @@ class _TodoListWidgetState extends State<TodoListWidget> {
             ),
           ),
           // 已归档的任务列表
-          ...widget.todoManager.archivedTodos.map(
+          ...todoManager.archivedTodos.map(
             (todo) => TodoItemDisplayWidget(
               todo: todo,
-              todoManager: widget.todoManager,
               onTodoChanged: widget.onTodoChanged,
             ),
           ),

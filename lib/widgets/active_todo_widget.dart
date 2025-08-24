@@ -1,39 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/todo_manager_interface.dart';
 import '../models/todo.dart';
+import '../providers.dart';
 
-class ActiveTodoWidget extends StatefulWidget {
-  final TodoManagerInterface todoManager;
-
-  const ActiveTodoWidget({super.key, required this.todoManager});
-
-  @override
-  State<ActiveTodoWidget> createState() => _ActiveTodoWidgetState();
-}
-
-class _ActiveTodoWidgetState extends State<ActiveTodoWidget> {
-  late TodoManagerInterface todoManager;
-
-  @override
-  void initState() {
-    super.initState();
-    todoManager = widget.todoManager;
-    // 添加监听器以更新UI
-    todoManager.addListener(_updateUI);
-  }
-
-  @override
-  void dispose() {
-    // 移除监听器
-    todoManager.removeListener(_updateUI);
-    super.dispose();
-  }
-
-  void _updateUI() {
-    if (mounted) {
-      setState(() {});
-    }
-  }
+class ActiveTodoWidget extends ConsumerWidget {
+  const ActiveTodoWidget({super.key});
 
   Widget _buildNoActiveTodoView() {
     return Padding(
@@ -164,7 +136,8 @@ class _ActiveTodoWidgetState extends State<ActiveTodoWidget> {
     return const SizedBox.shrink();
   }
 
-  Widget _buildProgressSlider(Todo activeTodo) {
+  Widget _buildProgressSlider(
+      BuildContext context, Todo activeTodo, TodoManagerInterface todoManager) {
     return Row(
       children: [
         Expanded(
@@ -206,7 +179,8 @@ class _ActiveTodoWidgetState extends State<ActiveTodoWidget> {
     );
   }
 
-  Widget _buildActiveTodoView(Todo activeTodo) {
+  Widget _buildActiveTodoView(
+      BuildContext context, Todo activeTodo, TodoManagerInterface todoManager) {
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 360),
@@ -231,7 +205,7 @@ class _ActiveTodoWidgetState extends State<ActiveTodoWidget> {
                 const SizedBox(height: 8),
                 _buildTodoTags(activeTodo),
                 const SizedBox(height: 8),
-                _buildProgressSlider(activeTodo),
+                _buildProgressSlider(context, activeTodo, todoManager),
               ],
             ),
           ),
@@ -241,12 +215,13 @@ class _ActiveTodoWidgetState extends State<ActiveTodoWidget> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final todoManager = ref.watch(todoManagerProvider);
     final activeTodo = todoManager.getActiveTodo(includeCompleted: true);
     if (activeTodo == null) {
       return _buildNoActiveTodoView();
     }
 
-    return _buildActiveTodoView(activeTodo);
+    return _buildActiveTodoView(context, activeTodo, todoManager);
   }
 }

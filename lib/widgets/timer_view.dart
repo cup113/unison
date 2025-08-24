@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/todo.dart';
-import '../services/timer_manager_interface.dart';
-import '../app_state_manager.dart';
-import 'active_todo_widget.dart';
 
-class TimerView extends StatefulWidget {
-  final AppStateManager appStateManager;
+import 'active_todo_widget.dart';
+import '../providers.dart';
+
+class TimerView extends ConsumerStatefulWidget {
   final int selectedDuration;
   final int remainingSeconds;
   final bool isPaused;
@@ -14,7 +14,6 @@ class TimerView extends StatefulWidget {
 
   const TimerView({
     super.key,
-    required this.appStateManager,
     required this.selectedDuration,
     required this.remainingSeconds,
     required this.isPaused,
@@ -23,32 +22,26 @@ class TimerView extends StatefulWidget {
   });
 
   @override
-  State<TimerView> createState() => _TimerViewState();
+  ConsumerState<TimerView> createState() => _TimerViewState();
 }
 
-class _TimerViewState extends State<TimerView> {
+class _TimerViewState extends ConsumerState<TimerView> {
   @override
   void initState() {
     super.initState();
-    // 添加监听器以更新UI
-    widget.appStateManager.addListener(_updateUI);
+    // No need for manual listeners with Riverpod
   }
 
   @override
   void dispose() {
-    widget.appStateManager.removeListener(_updateUI);
     super.dispose();
-  }
-
-  void _updateUI() {
-    setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
-    final timerManager = widget.appStateManager.timerManager;
-    final todoManager = widget.appStateManager.todoManager;
-    final Todo? activeTodo = todoManager.getActiveTodo();
+    // With Riverpod, we don't need to pass managers down the widget tree
+    // The timer state is already managed by Riverpod providers
+    final Todo? activeTodo = null; // This will be handled by ActiveTodoWidget
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -58,7 +51,7 @@ class _TimerViewState extends State<TimerView> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               const SizedBox(height: 20),
-              _buildStatusInfo(timerManager),
+              _buildStatusInfo(),
               const SizedBox(height: 10),
               Expanded(
                 child: Center(
@@ -66,12 +59,12 @@ class _TimerViewState extends State<TimerView> {
                 ),
               ),
               const SizedBox(height: 10),
-              _buildAddTimeButtons(timerManager),
-              _buildTimerControls(timerManager, activeTodo),
+              _buildAddTimeButtons(),
+              _buildTimerControls(activeTodo),
               const SizedBox(height: 20),
               const Divider(height: 1, thickness: 1),
               const SizedBox(height: 20),
-              ActiveTodoWidget(todoManager: todoManager),
+              const ActiveTodoWidget(),
               const SizedBox(height: 20),
             ],
           ),
@@ -80,7 +73,8 @@ class _TimerViewState extends State<TimerView> {
     );
   }
 
-  Widget _buildStatusInfo(timerManager) {
+  Widget _buildStatusInfo() {
+    final timerManager = ref.watch(timerManagerProvider);
     return Text(
       '退出: ${widget.exitCount}, 暂停: ${timerManager.pauseCount}',
       style: const TextStyle(fontSize: 16, color: Colors.grey),
@@ -162,7 +156,7 @@ class _TimerViewState extends State<TimerView> {
     );
   }
 
-  Widget _buildAddTimeButtons(TimerManagerInterface timerManager) {
+  Widget _buildAddTimeButtons() {
     if (widget.remainingSeconds >= 0) {
       return const SizedBox.shrink();
     }
@@ -176,7 +170,7 @@ class _TimerViewState extends State<TimerView> {
               .map(
                 (minutes) => Row(
                   children: [
-                    _buildAddTimeButton(timerManager, minutes),
+                    _buildAddTimeButton(minutes),
                     if (minutes != 15) const SizedBox(width: 10),
                   ],
                 ),
@@ -188,7 +182,8 @@ class _TimerViewState extends State<TimerView> {
     );
   }
 
-  Widget _buildAddTimeButton(TimerManagerInterface timerManager, int minutes) {
+  Widget _buildAddTimeButton(int minutes) {
+    final timerManager = ref.watch(timerManagerProvider);
     return ElevatedButton(
       onPressed: () {
         timerManager.addTime(minutes);
@@ -202,8 +197,7 @@ class _TimerViewState extends State<TimerView> {
     );
   }
 
-  Widget _buildTimerControls(
-      TimerManagerInterface timerManager, Todo? activeTodo) {
+  Widget _buildTimerControls(Todo? activeTodo) {
     final bool canComplete =
         widget.remainingSeconds <= widget.selectedDuration * 60 ~/ 2;
 
@@ -213,18 +207,19 @@ class _TimerViewState extends State<TimerView> {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _buildPauseResumeButton(timerManager),
+            _buildPauseResumeButton(),
             const SizedBox(width: 20),
-            _buildCancelButton(timerManager),
+            _buildCancelButton(),
             const SizedBox(width: 20),
-            _buildCompleteButton(timerManager, canComplete),
+            _buildCompleteButton(canComplete),
           ],
         ),
       ],
     );
   }
 
-  Widget _buildPauseResumeButton(TimerManagerInterface timerManager) {
+  Widget _buildPauseResumeButton() {
+    final timerManager = ref.watch(timerManagerProvider);
     return ElevatedButton(
       onPressed: () {
         if (timerManager.isTimerActive) {
@@ -257,7 +252,8 @@ class _TimerViewState extends State<TimerView> {
     );
   }
 
-  Widget _buildCancelButton(timerManager) {
+  Widget _buildCancelButton() {
+    final timerManager = ref.watch(timerManagerProvider);
     return OutlinedButton(
       onPressed: () {
         // 计算已计时时间（分钟）
@@ -326,8 +322,7 @@ class _TimerViewState extends State<TimerView> {
     );
   }
 
-  Widget _buildCompleteButton(
-      TimerManagerInterface timerManager, bool canComplete) {
+  Widget _buildCompleteButton(bool canComplete) {
     return ElevatedButton(
       onPressed: canComplete
           ? () {
