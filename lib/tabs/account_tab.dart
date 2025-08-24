@@ -140,13 +140,13 @@ class _AccountTabState extends ConsumerState<AccountTab> {
       }
       await _loadAccountStatus();
 
-      if (context.mounted) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('登录成功')),
         );
       }
     } catch (e) {
-      if (context.mounted) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(e.toString())),
         );
@@ -261,13 +261,13 @@ class _AccountTabState extends ConsumerState<AccountTab> {
       }
       await _loadAccountStatus();
 
-      if (context.mounted) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('注册成功')),
         );
       }
     } catch (e) {
-      if (context.mounted) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(e.toString())),
         );
@@ -309,13 +309,13 @@ class _AccountTabState extends ConsumerState<AccountTab> {
       if (currentContext.mounted) {
         Navigator.pop(currentContext);
       }
-      if (context.mounted) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('已退出登录')),
         );
       }
     } catch (e) {
-      if (context.mounted) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('退出登录失败: ${e.toString()}')),
         );
