@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'focus_timer_page.dart';
-import 'social_page.dart';
-import 'account_page.dart';
-import 'statistics_page.dart';
+import 'tabs/focus_tab.dart';
+import 'tabs/social_tab.dart';
+import 'tabs/account_tab.dart';
+import 'tabs/statistics_tab.dart';
 import 'app_state_manager.dart';
-import 'timer_manager.dart';
-import 'todo_manager.dart';
-import 'auth_service.dart';
+import './services/timer_manager.dart';
+import './services/todo_manager.dart';
+import './services/auth_service.dart';
 
 class MainTabbedPage extends StatefulWidget {
   const MainTabbedPage({super.key});

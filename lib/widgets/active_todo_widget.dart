@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
-import 'todo_manager.dart';
-import 'todo.dart';
+import '../services/todo_manager_interface.dart';
+import '../models/todo.dart';
 
-class ActiveTodoView extends StatefulWidget {
-  final TodoManager todoManager;
+class ActiveTodoWidget extends StatefulWidget {
+  final TodoManagerInterface todoManager;
 
-  const ActiveTodoView({super.key, required this.todoManager});
+  const ActiveTodoWidget({super.key, required this.todoManager});
 
   @override
-  State<ActiveTodoView> createState() => _ActiveTodoViewState();
+  State<ActiveTodoWidget> createState() => _ActiveTodoWidgetState();
 }
 
-class _ActiveTodoViewState extends State<ActiveTodoView> {
-  late TodoManager todoManager;
+class _ActiveTodoWidgetState extends State<ActiveTodoWidget> {
+  late TodoManagerInterface todoManager;
 
   @override
   void initState() {
@@ -103,7 +103,7 @@ class _ActiveTodoViewState extends State<ActiveTodoView> {
     if (activeTodo.category.isNotEmpty) {
       tags.add(
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
             color: Colors.blueGrey.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(6),
@@ -129,7 +129,7 @@ class _ActiveTodoViewState extends State<ActiveTodoView> {
     if (activeTodo.estimatedTime > 0) {
       tags.add(
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
             color: Colors.deepOrange.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(6),
@@ -230,7 +230,7 @@ class _ActiveTodoViewState extends State<ActiveTodoView> {
                 _buildTodoTitle(activeTodo),
                 const SizedBox(height: 8),
                 _buildTodoTags(activeTodo),
-                const SizedBox(height: 4),
+                const SizedBox(height: 8),
                 _buildProgressSlider(activeTodo),
               ],
             ),
@@ -242,7 +242,6 @@ class _ActiveTodoViewState extends State<ActiveTodoView> {
 
   @override
   Widget build(BuildContext context) {
-    // 使用 includeCompleted: true 来显示已完成但仍然活动的任务
     final activeTodo = todoManager.getActiveTodo(includeCompleted: true);
     if (activeTodo == null) {
       return _buildNoActiveTodoView();

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'app_state_manager.dart';
-import 'active_todo_view.dart';
+import '../app_state_manager.dart';
+import 'active_todo_widget.dart';
 
 class SetupView extends StatelessWidget {
   final AppStateManager appStateManager;
@@ -49,7 +49,7 @@ class SetupView extends StatelessWidget {
           const SizedBox(height: 30),
           const Divider(height: 1, thickness: 1),
           const SizedBox(height: 20),
-          ActiveTodoView(todoManager: appStateManager.todoManager),
+          ActiveTodoWidget(todoManager: appStateManager.todoManager),
         ],
       ),
     );

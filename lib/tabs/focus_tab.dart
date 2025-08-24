@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'todo.dart';
-import 'todo_manager.dart';
-import 'todo_list_widget.dart';
-import 'timer_manager.dart';
-import 'setup_view.dart';
-import 'timer_view.dart';
-import 'app_state_manager.dart';
+import '../models/todo.dart';
+import '../services/todo_manager_interface.dart';
+import '../widgets/todo_list_widget.dart';
+import '../services/timer_manager_interface.dart';
+import '../widgets/setup_view.dart';
+import '../widgets/timer_view.dart';
+import '../app_state_manager.dart';
 
 class FocusTab extends StatefulWidget {
   final AppStateManager appStateManager;
@@ -17,8 +17,8 @@ class FocusTab extends StatefulWidget {
 }
 
 class _FocusTabState extends State<FocusTab> {
-  late final TimerManager _timerManager;
-  final TodoManager _todoManager = TodoManager();
+  late final TimerManagerInterface _timerManager;
+  late final TodoManagerInterface _todoManager;
   bool _isLoading = true;
 
   @override
@@ -29,7 +29,7 @@ class _FocusTabState extends State<FocusTab> {
 
   Future<void> _initManagers() async {
     _timerManager = widget.appStateManager.timerManager;
-    await _todoManager.loadFromStorage();
+    _todoManager = widget.appStateManager.todoManager;
 
     // 添加监听器以重建UI
     _timerManager.addListener(() {

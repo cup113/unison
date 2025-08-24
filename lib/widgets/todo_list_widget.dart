@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'todo_manager.dart';
+import '../services/todo_manager_interface.dart';
 import 'todo_item_display_widget.dart';
 import 'todo_editor_widget.dart';
 
 class TodoListWidget extends StatefulWidget {
-  final TodoManager todoManager;
+  final TodoManagerInterface todoManager;
   final VoidCallback onTodoChanged;
 
   const TodoListWidget({

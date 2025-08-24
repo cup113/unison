@@ -1,27 +1,13 @@
 import 'package:flutter/foundation.dart';
-import 'timer_manager.dart';
-import 'todo.dart';
-import 'todo_manager.dart';
-import 'focus.dart';
-import 'auth_service.dart';
+import './services/timer_manager.dart';
+import './models/todo.dart';
+import './services/todo_manager.dart';
+import './models/focus.dart';
+import './services/auth_service.dart';
+import './constants/app_constants.dart';
 
 class AppStateManager with ChangeNotifier {
-  static const List<int> presetDurations = [
-    2,
-    5,
-    10,
-    15,
-    20,
-    25,
-    30,
-    40,
-    50,
-    60,
-    75,
-    90,
-    105,
-    120,
-  ]; // in minutes
+  static const List<int> presetDurations = AppConstants.presetDurations;
 
   final TimerManager _timerManager;
   final TodoManager _todoManager;

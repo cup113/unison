@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'main_tabbed_page.dart';
+import './main_tabbed_page.dart';
 
 void main() {
   runApp(const MyApp());

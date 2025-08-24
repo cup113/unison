@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'todo.dart';
-import 'todo_manager.dart';
+import '../models/todo.dart';
+import '../services/todo_manager_interface.dart';
 
 class TodoEditorWidget extends StatefulWidget {
   final Todo? todo; // 如果为null，则为新建任务
-  final TodoManager todoManager;
+  final TodoManagerInterface todoManager;
   final VoidCallback onTodoChanged;
   final VoidCallback onCancel;
 

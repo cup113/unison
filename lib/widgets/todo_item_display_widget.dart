@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'todo.dart';
-import 'todo_manager.dart';
+import '../models/todo.dart';
+import '../services/todo_manager_interface.dart';
 import 'todo_editor_widget.dart';
 
 class TodoItemDisplayWidget extends StatefulWidget {
   final Todo todo;
-  final TodoManager todoManager;
+  final TodoManagerInterface todoManager;
   final VoidCallback onTodoChanged;
 
   const TodoItemDisplayWidget({
@@ -20,6 +20,24 @@ class TodoItemDisplayWidget extends StatefulWidget {
 }
 
 class _TodoItemDisplayWidgetState extends State<TodoItemDisplayWidget> {
+  @override
+  void initState() {
+    super.initState();
+    widget.todoManager.addListener(_updateUI);
+  }
+
+  @override
+  void dispose() {
+    widget.todoManager.removeListener(_updateUI);
+    super.dispose();
+  }
+
+  void _updateUI() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -62,7 +80,6 @@ class _TodoItemDisplayWidgetState extends State<TodoItemDisplayWidget> {
           onPressed: () {
             widget.todoManager.toggleActive(widget.todo.id);
             widget.onTodoChanged();
-            setState(() {});
           },
         ),
         IconButton(
@@ -80,7 +97,6 @@ class _TodoItemDisplayWidgetState extends State<TodoItemDisplayWidget> {
           onPressed: () {
             widget.todoManager.toggleArchive(widget.todo.id);
             widget.onTodoChanged();
-            setState(() {});
           },
         ),
         IconButton(

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'app_state_manager.dart';
-import 'focus.dart';
+import '../app_state_manager.dart';
+import '../models/focus.dart';
 
 class StatisticsTab extends StatefulWidget {
   final AppStateManager appStateManager;

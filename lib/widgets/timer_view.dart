@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:unison/todo.dart';
-import 'package:unison/timer_manager.dart';
-import 'app_state_manager.dart';
-import 'active_todo_view.dart';
+import '../models/todo.dart';
+import '../services/timer_manager_interface.dart';
+import '../app_state_manager.dart';
+import 'active_todo_widget.dart';
 
 class TimerView extends StatefulWidget {
   final AppStateManager appStateManager;
@@ -71,7 +71,7 @@ class _TimerViewState extends State<TimerView> {
               const SizedBox(height: 20),
               const Divider(height: 1, thickness: 1),
               const SizedBox(height: 20),
-              ActiveTodoView(todoManager: todoManager),
+              ActiveTodoWidget(todoManager: todoManager),
               const SizedBox(height: 20),
             ],
           ),
@@ -162,7 +162,7 @@ class _TimerViewState extends State<TimerView> {
     );
   }
 
-  Widget _buildAddTimeButtons(TimerManager timerManager) {
+  Widget _buildAddTimeButtons(TimerManagerInterface timerManager) {
     if (widget.remainingSeconds >= 0) {
       return const SizedBox.shrink();
     }
@@ -188,7 +188,7 @@ class _TimerViewState extends State<TimerView> {
     );
   }
 
-  Widget _buildAddTimeButton(TimerManager timerManager, int minutes) {
+  Widget _buildAddTimeButton(TimerManagerInterface timerManager, int minutes) {
     return ElevatedButton(
       onPressed: () {
         timerManager.addTime(minutes);
@@ -202,7 +202,8 @@ class _TimerViewState extends State<TimerView> {
     );
   }
 
-  Widget _buildTimerControls(TimerManager timerManager, Todo? activeTodo) {
+  Widget _buildTimerControls(
+      TimerManagerInterface timerManager, Todo? activeTodo) {
     final bool canComplete =
         widget.remainingSeconds <= widget.selectedDuration * 60 ~/ 2;
 
@@ -223,7 +224,7 @@ class _TimerViewState extends State<TimerView> {
     );
   }
 
-  Widget _buildPauseResumeButton(TimerManager timerManager) {
+  Widget _buildPauseResumeButton(TimerManagerInterface timerManager) {
     return ElevatedButton(
       onPressed: () {
         if (timerManager.isTimerActive) {
@@ -325,7 +326,8 @@ class _TimerViewState extends State<TimerView> {
     );
   }
 
-  Widget _buildCompleteButton(TimerManager timerManager, bool canComplete) {
+  Widget _buildCompleteButton(
+      TimerManagerInterface timerManager, bool canComplete) {
     return ElevatedButton(
       onPressed: canComplete
           ? () {

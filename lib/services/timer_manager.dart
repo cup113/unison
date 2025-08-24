@@ -3,94 +3,37 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:nanoid2/nanoid2.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'focus.dart';
+import '../models/focus.dart';
+import '../models/timer_state.dart';
+import '../constants/app_constants.dart';
+import 'timer_manager_interface.dart';
 
-class TimerState {
-  final int? selectedDuration; // 选定的持续时间（分钟）
-  final int? remainingSeconds; // 剩余秒数
-  final bool isPaused; // 是否暂停
-  final int exitCount; // 退出次数
-  final int pauseCount; // 暂停次数
-  final DateTime? startTime; // 开始时间
-  final DateTime? lastExitTime; // 上次退出时间
-
-  TimerState({
-    this.selectedDuration,
-    this.remainingSeconds,
-    this.isPaused = false,
-    this.exitCount = 0,
-    this.pauseCount = 0,
-    this.startTime,
-    this.lastExitTime,
-  });
-
-  TimerState copyWith({
-    int? selectedDuration,
-    int? remainingSeconds,
-    bool? isPaused,
-    int? exitCount,
-    int? pauseCount,
-    DateTime? startTime,
-    DateTime? lastExitTime,
-  }) {
-    return TimerState(
-      selectedDuration: selectedDuration ?? this.selectedDuration,
-      remainingSeconds: remainingSeconds ?? this.remainingSeconds,
-      isPaused: isPaused ?? this.isPaused,
-      exitCount: exitCount ?? this.exitCount,
-      pauseCount: pauseCount ?? this.pauseCount,
-      startTime: startTime ?? this.startTime,
-      lastExitTime: lastExitTime ?? this.lastExitTime,
-    );
-  }
-
-  Map<String, dynamic> toMap() {
-    return {
-      'selectedDuration': selectedDuration,
-      'remainingSeconds': remainingSeconds,
-      'isPaused': isPaused,
-      'exitCount': exitCount,
-      'pauseCount': pauseCount,
-      'startTime': startTime?.millisecondsSinceEpoch,
-      'lastExitTime': lastExitTime?.millisecondsSinceEpoch,
-    };
-  }
-
-  factory TimerState.fromMap(Map<String, dynamic> map) {
-    return TimerState(
-      selectedDuration: map['selectedDuration'],
-      remainingSeconds: map['remainingSeconds'],
-      isPaused: map['isPaused'] ?? false,
-      exitCount: map['exitCount'] ?? 0,
-      pauseCount: map['pauseCount'] ?? 0,
-      startTime: map['startTime'] != null
-          ? DateTime.fromMillisecondsSinceEpoch(map['startTime'])
-          : null,
-      lastExitTime: map['lastExitTime'] != null
-          ? DateTime.fromMillisecondsSinceEpoch(map['lastExitTime'])
-          : null,
-    );
-  }
-}
-
-class TimerManager with ChangeNotifier {
-  static const String _timerStateKey = 'timer_state_v2';
-  static const String _focusRecordsKey = 'focus_records_v3';
+class TimerManager with ChangeNotifier implements TimerManagerInterface {
+  static const String _timerStateKey = AppConstants.timerStateKey;
+  static const String _focusRecordsKey = AppConstants.focusRecordsKey;
 
   TimerState _state = TimerState();
   Timer? _timer;
   DateTime? _lastTickTime;
 
-// Getters
+  @override
   int? get selectedDuration => _state.selectedDuration;
+  @override
   int? get remainingSeconds => _state.remainingSeconds;
+  @override
   int get exitCount => _state.exitCount;
+  @override
   int get pauseCount => _state.pauseCount;
+  @override
   bool get isPaused => _state.isPaused;
+  @override
   bool get isTimerActive => _timer?.isActive ?? false;
+  @override
   DateTime? get startTime => _state.startTime;
+  @override
   DateTime? get lastExitTime => _state.lastExitTime;
 
+  @override
   Future<void> loadFromStorage() async {
     final prefs = await SharedPreferences.getInstance();
     final timerStateString = prefs.getString(_timerStateKey);
@@ -115,6 +58,7 @@ class TimerManager with ChangeNotifier {
   }
 
   // 保存状态到存储
+  @override
   Future<void> saveToStorage() async {
     final prefs = await SharedPreferences.getInstance();
 
@@ -126,6 +70,7 @@ class TimerManager with ChangeNotifier {
   }
 
 // 保存专注记录
+  @override
   Future<void> saveFocusRecord({
     required DateTime startTime,
     required DateTime endTime,
@@ -185,6 +130,7 @@ class TimerManager with ChangeNotifier {
   }
 
 // 获取专注记录
+  @override
   Future<List<FocusSession>> getFocusRecords() async {
     final prefs = await SharedPreferences.getInstance();
     final recordsString = prefs.getString(_focusRecordsKey);
@@ -201,6 +147,7 @@ class TimerManager with ChangeNotifier {
   }
 
 // 删除专注记录
+  @override
   Future<void> deleteFocusRecord(String id) async {
     final prefs = await SharedPreferences.getInstance();
     final recordsString = prefs.getString(_focusRecordsKey);
@@ -217,6 +164,7 @@ class TimerManager with ChangeNotifier {
   }
 
   // 开始计时器
+  @override
   void startTimer(int minutes) {
     _timer?.cancel();
 
@@ -236,6 +184,7 @@ class TimerManager with ChangeNotifier {
   }
 
   // 恢复计时器
+  @override
   void resumeTimer() {
     if (_state.remainingSeconds != null && _state.remainingSeconds != 0) {
       _timer?.cancel();
@@ -272,6 +221,7 @@ class TimerManager with ChangeNotifier {
     });
   }
 
+  @override
   void pauseTimer() {
     _timer?.cancel();
     _state = _state.copyWith(
@@ -282,6 +232,7 @@ class TimerManager with ChangeNotifier {
     notifyListeners();
   }
 
+  @override
   void cancelTimer(bool finished) {
     _timer?.cancel();
 
@@ -313,6 +264,7 @@ class TimerManager with ChangeNotifier {
   }
 
   // 增加时间
+  @override
   void addTime(int minutes) {
     if (_state.remainingSeconds != null) {
       _state = _state.copyWith(
@@ -325,6 +277,7 @@ class TimerManager with ChangeNotifier {
   }
 
   // 处理应用退出
+  @override
   void handleAppExit() {
     final now = DateTime.now();
     int newExitCount = _state.exitCount;

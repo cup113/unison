@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'app_state_manager.dart';
+import '../app_state_manager.dart';
 
 class SocialTab extends StatefulWidget {
   final AppStateManager appStateManager;
