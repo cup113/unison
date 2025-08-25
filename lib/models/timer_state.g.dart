@@ -24,13 +24,14 @@ class TimerStateAdapter extends TypeAdapter<TimerState> {
       pauseCount: fields[4] as int,
       startTime: fields[5] as DateTime?,
       lastExitTime: fields[6] as DateTime?,
+      isRest: fields[7] as bool?,
     );
   }
 
   @override
   void write(BinaryWriter writer, TimerState obj) {
     writer
-      ..writeByte(7)
+      ..writeByte(8)
       ..writeByte(0)
       ..write(obj.selectedDuration)
       ..writeByte(1)
@@ -44,7 +45,9 @@ class TimerStateAdapter extends TypeAdapter<TimerState> {
       ..writeByte(5)
       ..write(obj.startTime)
       ..writeByte(6)
-      ..write(obj.lastExitTime);
+      ..write(obj.lastExitTime)
+      ..writeByte(7)
+      ..write(obj.isRest);
   }
 
   @override
@@ -74,6 +77,7 @@ TimerState _$TimerStateFromJson(Map<String, dynamic> json) => TimerState(
       lastExitTime: json['lastExitTime'] == null
           ? null
           : DateTime.parse(json['lastExitTime'] as String),
+      isRest: json['isRest'] as bool? ?? false,
     );
 
 Map<String, dynamic> _$TimerStateToJson(TimerState instance) =>
@@ -85,4 +89,5 @@ Map<String, dynamic> _$TimerStateToJson(TimerState instance) =>
       'pauseCount': instance.pauseCount,
       'startTime': instance.startTime?.toIso8601String(),
       'lastExitTime': instance.lastExitTime?.toIso8601String(),
+      'isRest': instance.isRest,
     };

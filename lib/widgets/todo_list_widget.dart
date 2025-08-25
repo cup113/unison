@@ -20,7 +20,7 @@ class TodoListWidget extends ConsumerStatefulWidget {
 class _TodoListWidgetState extends ConsumerState<TodoListWidget> {
   bool _isAddingTodo = false;
   late final TodoManagerInterface _todoManager;
-  
+
   @override
   void initState() {
     super.initState();

@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import './services/timer_manager.dart';
-import './models/todo.dart';
 import './services/todo_manager.dart';
 import './models/focus.dart';
 import './services/auth_service.dart';
@@ -105,51 +104,6 @@ class AppStateManager with ChangeNotifier {
       _id = '';
     }
     notifyListeners();
-  }
-
-  Future<void> saveFocusRecord({
-    required DateTime startTime,
-    required DateTime endTime,
-    required int plannedDuration,
-    required int actualDuration,
-    required int pauseCount,
-    required int exitCount,
-    required bool isCompleted, // 新增：显式标记是否完成
-    List<Todo>? todos, // 支持关联多个todo
-    List<int>? progressList, // 对应的进度列表
-    List<int>? focusedTimeList, // 对应的专注时间列表
-  }) async {
-    List<Map<String, dynamic>>? todoData;
-
-    if (todos != null) {
-      todoData = [];
-      for (int i = 0; i < todos.length; i++) {
-        todoData.add({
-          'todoId': todos[i].id,
-          'todoTitle': todos[i].title,
-          'todoCategory': todos[i].category,
-          'todoProgressStart': todos[i].progress, // 保存开始进度
-          'todoProgress': progressList != null && i < progressList.length
-              ? progressList[i]
-              : todos[i].progress,
-          'todoFocusedTime':
-              focusedTimeList != null && i < focusedTimeList.length
-                  ? focusedTimeList[i]
-                  : 0,
-        });
-      }
-    }
-
-    await _timerManager.saveFocusRecord(
-      startTime: startTime,
-      endTime: endTime,
-      plannedDuration: plannedDuration,
-      actualDuration: actualDuration,
-      pauseCount: pauseCount,
-      exitCount: exitCount,
-      isCompleted: isCompleted, // 传递完成状态
-      todoData: todoData,
-    );
   }
 
 // 新增：获取专注记录

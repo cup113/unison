@@ -29,6 +29,8 @@ class TimerManager with ChangeNotifier implements TimerManagerInterface {
   @override
   bool get isTimerActive => _timer?.isActive ?? false;
   @override
+  bool get isRest => _state.isRest ?? false;
+  @override
   DateTime? get startTime => _state.startTime;
   @override
   DateTime? get lastExitTime => _state.lastExitTime;
@@ -40,36 +42,32 @@ class TimerManager with ChangeNotifier implements TimerManagerInterface {
 
     if (timerStateString != null) {
       try {
-        final Map<String, dynamic> timerStateMap =
-            json.decode(timerStateString);
-        _state = TimerState.fromMap(timerStateMap);
+        _state = TimerState.fromJson(json.decode(timerStateString));
 
         // 如果有待定的计时器，则恢复它
-        if (_state.remainingSeconds != null &&
+        final shouldResume = _state.remainingSeconds != null &&
             _state.remainingSeconds! > 0 &&
-            !_state.isPaused) {
+            !_state.isPaused;
+        if (shouldResume) {
           resumeTimer();
         }
       } catch (e) {
-        // 如果解析失败，重置状态
-        _state = TimerState();
+        _state = TimerState(isRest: false);
       }
     }
   }
 
-  // 保存状态到存储
   @override
   Future<void> saveToStorage() async {
     final prefs = await SharedPreferences.getInstance();
 
     if (_state.selectedDuration != null) {
-      prefs.setString(_timerStateKey, json.encode(_state.toMap()));
+      prefs.setString(_timerStateKey, json.encode(_state.toJson()));
     } else {
       prefs.remove(_timerStateKey);
     }
   }
 
-// 保存专注记录
   @override
   Future<void> saveFocusRecord({
     required DateTime startTime,
@@ -79,8 +77,12 @@ class TimerManager with ChangeNotifier implements TimerManagerInterface {
     required int pauseCount,
     required int exitCount,
     required bool isCompleted,
-    List<Map<String, dynamic>>? todoData,
+    required String focusId,
+    List<FocusTodo>? todoData,
   }) async {
+    if (!isRest) {
+      _state = TimerState(isRest: true);
+    }
     final prefs = await SharedPreferences.getInstance();
     final recordsString = prefs.getString(_focusRecordsKey);
     final List<dynamic> records =
@@ -92,7 +94,7 @@ class TimerManager with ChangeNotifier implements TimerManagerInterface {
 
     // 创建新的FocusRecord
     final focusRecord = FocusRecord(
-      id: nanoid(),
+      id: focusId,
       start: startTime,
       end: endTime,
       durationTarget: plannedDuration,
@@ -105,17 +107,7 @@ class TimerManager with ChangeNotifier implements TimerManagerInterface {
     final List<FocusTodo> focusTodos = [];
     if (todoData != null) {
       for (int i = 0; i < todoData.length; i++) {
-        final todo = todoData[i];
-        focusTodos.add(FocusTodo(
-          id: '${focusRecord.id}_todo_$i',
-          todoId: todo['todoId'] ?? '',
-          focusId: focusRecord.id,
-          duration: todo['todoFocusedTime'] ?? 0,
-          progressStart: todo['todoProgressStart'] ?? 0, // 改进：使用开始进度
-          progressEnd: todo['todoProgress'] ?? 0,
-          todoTitle: todo['todoTitle'], // 保存TODO标题
-          todoCategory: todo['todoCategory'], // 保存TODO类别
-        ));
+        focusTodos.add(todoData[i]);
       }
     }
 
@@ -125,11 +117,10 @@ class TimerManager with ChangeNotifier implements TimerManagerInterface {
       focusTodos: focusTodos,
     );
 
-    records.add(focusSession.toMap());
+    records.add(focusSession.toJson());
     prefs.setString(_focusRecordsKey, json.encode(records));
   }
 
-// 获取专注记录
   @override
   Future<List<FocusSession>> getFocusRecords() async {
     final prefs = await SharedPreferences.getInstance();
@@ -138,7 +129,7 @@ class TimerManager with ChangeNotifier implements TimerManagerInterface {
     if (recordsString != null) {
       try {
         final List<dynamic> records = json.decode(recordsString);
-        return records.map((record) => FocusSession.fromMap(record)).toList();
+        return records.map((record) => FocusSession.fromJson(record)).toList();
       } catch (e) {
         return [];
       }
@@ -146,7 +137,6 @@ class TimerManager with ChangeNotifier implements TimerManagerInterface {
     return [];
   }
 
-// 删除专注记录
   @override
   Future<void> deleteFocusRecord(String id) async {
     final prefs = await SharedPreferences.getInstance();
@@ -163,7 +153,6 @@ class TimerManager with ChangeNotifier implements TimerManagerInterface {
     }
   }
 
-  // 开始计时器
   @override
   void startTimer(int minutes) {
     _timer?.cancel();
@@ -172,6 +161,7 @@ class TimerManager with ChangeNotifier implements TimerManagerInterface {
       selectedDuration: minutes,
       remainingSeconds: minutes * 60,
       isPaused: false,
+      isRest: isRest,
       exitCount: 0,
       pauseCount: 0,
       startTime: DateTime.now(),
@@ -200,21 +190,19 @@ class TimerManager with ChangeNotifier implements TimerManagerInterface {
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       final now = DateTime.now();
 
-      // 处理应用暂停后的时间补偿
       if (_lastTickTime != null) {
         final difference = now.difference(_lastTickTime!).inSeconds;
         if (difference > 2) {
-          // 补偿暂停期间的时间
-          _state = _state.copyWith(
-            remainingSeconds: _state.remainingSeconds! - (difference - 1),
-          );
+          final newRemaining = _state.remainingSeconds! - (difference - 1);
+          _state = _state.copyWith(remainingSeconds: newRemaining);
         }
       }
 
       _lastTickTime = now;
-      _state = _state.copyWith(
-        remainingSeconds: _state.remainingSeconds! - 1,
-      );
+
+      // Update the correct state
+      final newRemaining = _state.remainingSeconds! - 1;
+      _state = _state.copyWith(remainingSeconds: newRemaining);
 
       notifyListeners();
       saveToStorage();
@@ -246,6 +234,7 @@ class TimerManager with ChangeNotifier implements TimerManagerInterface {
       if (actualDurationMinutes > 0 && !finished) {
         // TODO: Currently, when finished, there is another call, and it should be unified later.
         saveFocusRecord(
+          focusId: nanoid(),
           startTime: _state.startTime!,
           endTime: endTime,
           plannedDuration: _state.selectedDuration!,
@@ -258,7 +247,7 @@ class TimerManager with ChangeNotifier implements TimerManagerInterface {
     }
 
     // 重置状态
-    _state = TimerState();
+    _state = TimerState(isRest: true);
     saveToStorage();
     notifyListeners();
   }
@@ -274,6 +263,21 @@ class TimerManager with ChangeNotifier implements TimerManagerInterface {
       notifyListeners();
       saveToStorage();
     }
+  }
+
+  @override
+  void skipRest() {
+    _state = TimerState(isRest: false);
+    notifyListeners();
+    saveToStorage();
+  }
+
+  @override
+  void cancelRestTimer() {
+    _timer?.cancel();
+    _state = TimerState(isRest: false);
+    notifyListeners();
+    saveToStorage();
   }
 
   // 处理应用退出

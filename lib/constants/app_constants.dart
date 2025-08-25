@@ -15,10 +15,23 @@ class AppConstants {
     105,
     120,
   ]; // in minutes
+  static const List<int> restDurations = [
+    2,
+    5,
+    10,
+    15,
+    20,
+    25,
+    30,
+    45,
+    60,
+    90,
+    120
+  ]; // in minutes
 
   static const String todoListKey = 'todo_list_v2';
   static const String timerStateKey = 'timer_state_v2';
-  static const String focusRecordsKey = 'focus_records_v3';
+  static const String focusRecordsKey = 'focus_records_v4';
 
   // Network timeouts
   static const Duration connectionTimeout = Duration(seconds: 30);

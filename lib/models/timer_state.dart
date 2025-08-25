@@ -7,19 +7,21 @@ part 'timer_state.g.dart';
 @HiveType(typeId: 2)
 class TimerState {
   @HiveField(0)
-  final int? selectedDuration; // 选定的持续时间（分钟）
+  final int? selectedDuration; // 选定的持续时间，单位为分钟
   @HiveField(1)
-  final int? remainingSeconds; // 剩余秒数
+  final int? remainingSeconds;
   @HiveField(2)
-  final bool isPaused; // 是否暂停
+  final bool isPaused;
   @HiveField(3)
-  final int exitCount; // 退出次数
+  final int exitCount;
   @HiveField(4)
-  final int pauseCount; // 暂停次数
+  final int pauseCount;
   @HiveField(5)
-  final DateTime? startTime; // 开始时间
+  final DateTime? startTime;
   @HiveField(6)
-  final DateTime? lastExitTime; // 上次退出时间
+  final DateTime? lastExitTime;
+  @HiveField(7)
+  final bool? isRest;
 
   TimerState({
     this.selectedDuration,
@@ -29,6 +31,7 @@ class TimerState {
     this.pauseCount = 0,
     this.startTime,
     this.lastExitTime,
+    this.isRest = false,
   });
 
   TimerState copyWith({
@@ -39,6 +42,7 @@ class TimerState {
     int? pauseCount,
     DateTime? startTime,
     DateTime? lastExitTime,
+    bool? isRest,
   }) {
     return TimerState(
       selectedDuration: selectedDuration ?? this.selectedDuration,
@@ -48,38 +52,12 @@ class TimerState {
       pauseCount: pauseCount ?? this.pauseCount,
       startTime: startTime ?? this.startTime,
       lastExitTime: lastExitTime ?? this.lastExitTime,
+      isRest: isRest ?? this.isRest,
     );
   }
 
-  Map<String, dynamic> toMap() {
-    return {
-      'selectedDuration': selectedDuration,
-      'remainingSeconds': remainingSeconds,
-      'isPaused': isPaused,
-      'exitCount': exitCount,
-      'pauseCount': pauseCount,
-      'startTime': startTime?.millisecondsSinceEpoch,
-      'lastExitTime': lastExitTime?.millisecondsSinceEpoch,
-    };
-  }
-
-  factory TimerState.fromMap(Map<String, dynamic> map) {
-    return TimerState(
-      selectedDuration: map['selectedDuration'],
-      remainingSeconds: map['remainingSeconds'],
-      isPaused: map['isPaused'] ?? false,
-      exitCount: map['exitCount'] ?? 0,
-      pauseCount: map['pauseCount'] ?? 0,
-      startTime: map['startTime'] != null
-          ? DateTime.fromMillisecondsSinceEpoch(map['startTime'])
-          : null,
-      lastExitTime: map['lastExitTime'] != null
-          ? DateTime.fromMillisecondsSinceEpoch(map['lastExitTime'])
-          : null,
-    );
-  }
-
-  factory TimerState.fromJson(Map<String, dynamic> json) => _$TimerStateFromJson(json);
+  factory TimerState.fromJson(Map<String, dynamic> json) =>
+      _$TimerStateFromJson(json);
 
   Map<String, dynamic> toJson() => _$TimerStateToJson(this);
 }

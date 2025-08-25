@@ -8,6 +8,7 @@ abstract class TimerManagerInterface with ChangeNotifier {
   int get pauseCount;
   bool get isPaused;
   bool get isTimerActive;
+  bool get isRest;
   DateTime? get startTime;
   DateTime? get lastExitTime;
 
@@ -22,7 +23,8 @@ abstract class TimerManagerInterface with ChangeNotifier {
     required int pauseCount,
     required int exitCount,
     required bool isCompleted,
-    List<Map<String, dynamic>>? todoData,
+    required String focusId,
+    List<FocusTodo>? todoData,
   });
 
   Future<List<FocusSession>> getFocusRecords();
@@ -33,5 +35,7 @@ abstract class TimerManagerInterface with ChangeNotifier {
   void pauseTimer();
   void cancelTimer(bool finished);
   void addTime(int minutes);
+  void skipRest();
+  void cancelRestTimer();
   void handleAppExit();
 }

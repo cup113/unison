@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:nanoid2/nanoid2.dart';
 import '../models/todo.dart';
+import '../models/focus.dart';
 import '../services/todo_manager_interface.dart';
-import '../widgets/todo_list_widget.dart';
-
-import '../widgets/setup_view.dart';
-import '../widgets/timer_view.dart';
 import '../providers.dart';
+
+import '../widgets/rest_timer_view.dart';
+import '../widgets/todo_list_widget.dart';
+import '../widgets/setup_view.dart';
+import '../widgets/rest_selection_view.dart';
+import '../widgets/timer_view.dart';
 
 class FocusTab extends ConsumerStatefulWidget {
   const FocusTab({super.key});
@@ -18,7 +22,8 @@ class FocusTab extends ConsumerStatefulWidget {
 class _FocusTabState extends ConsumerState<FocusTab> {
   final Map<String, int> _initialTodoProgress = {};
   final Map<String, int> _finalTodoProgress = {};
-  final Set<String> _modifiedTodoIds = {};
+  final Set<String> _modifiedTodoIds = {}; // TODO data persistence
+  late final TodoManagerInterface _todoManager;
 
   @override
   void initState() {
@@ -27,16 +32,16 @@ class _FocusTabState extends ConsumerState<FocusTab> {
   }
 
   void _setupProgressTracking() {
-    final todoManager = ref.read(todoManagerProvider);
+    _todoManager = ref.read(todoManagerProvider);
 
     // Capture initial progress state for all todos
-    for (final todo in todoManager.todos) {
+    for (final todo in _todoManager.todos) {
       _initialTodoProgress[todo.id] = todo.progress;
       _finalTodoProgress[todo.id] = todo.progress;
     }
 
     // Listen for progress changes during the session
-    todoManager.addListener(_onTodoProgressChanged);
+    _todoManager.addListener(_onTodoProgressChanged);
   }
 
   void _onTodoProgressChanged() {
@@ -87,7 +92,7 @@ class _FocusTabState extends ConsumerState<FocusTab> {
                 const Text('恭喜你完成专注任务！'),
                 const SizedBox(height: 16),
                 if (activeTodo != null) ...[
-                  Text('任务: ${activeTodo.title}'),
+                  Text('最后专注的任务: ${activeTodo.title}'),
                   const SizedBox(height: 8),
                   _buildDurationInput(durationController, durationNotifier),
                   const SizedBox(height: 8),
@@ -109,7 +114,9 @@ class _FocusTabState extends ConsumerState<FocusTab> {
               onPressed: () async {
                 await _handleTimerCompletion(actualDuration, activeTodo,
                     durationNotifier.value, progressNotifier.value);
-                if (context.mounted) Navigator.of(context).pop();
+                if (context.mounted) {
+                  Navigator.of(context).pop();
+                }
                 timerManager.cancelTimer(true);
                 _cleanupProgressTracking();
               },
@@ -141,7 +148,7 @@ class _FocusTabState extends ConsumerState<FocusTab> {
   ) async {
     final timerManager = ref.read(timerManagerProvider);
     final todoManager = ref.read(todoManagerProvider);
-    final appStateManager = ref.read(appStateManagerProvider);
+    final focusId = nanoid();
 
     if (activeTodo != null) {
       await todoManager.setProgress(activeTodo.id, lastAdjustedProgress);
@@ -152,21 +159,23 @@ class _FocusTabState extends ConsumerState<FocusTab> {
     }
 
     // Collect all modified todos with their progress changes
-    final modifiedTodos = todoManager.todos
+    final focusTodos = todoManager.todos
         .where((todo) => _modifiedTodoIds.contains(todo.id))
+        .map((todo) => FocusTodo(
+            id: nanoid(),
+            todoId: todo.id,
+            focusId: focusId,
+            duration: actualDuration, // TODO change
+            progressStart: _initialTodoProgress[todo.id]!,
+            progressEnd: _finalTodoProgress[todo.id]!,
+            todoTitle: todo.title,
+            todoCategory: todo.category))
         .toList();
-
-    final progressDeltas = modifiedTodos
-        .map((todo) =>
-            _finalTodoProgress[todo.id]! - _initialTodoProgress[todo.id]!)
-        .toList();
-
-    final focusedTimes = modifiedTodos.map((_) => actualDuration).toList();
 
     // Save focus record with all modified todos
     if (timerManager.startTime != null &&
         timerManager.selectedDuration != null) {
-      await appStateManager.saveFocusRecord(
+      await timerManager.saveFocusRecord(
         startTime: timerManager.startTime!,
         endTime: DateTime.now(),
         plannedDuration: timerManager.selectedDuration!,
@@ -174,9 +183,8 @@ class _FocusTabState extends ConsumerState<FocusTab> {
         pauseCount: timerManager.pauseCount,
         exitCount: timerManager.exitCount,
         isCompleted: true,
-        todos: modifiedTodos,
-        progressList: progressDeltas,
-        focusedTimeList: focusedTimes,
+        focusId: focusId,
+        todoData: focusTodos,
       );
     }
   }
@@ -185,7 +193,7 @@ class _FocusTabState extends ConsumerState<FocusTab> {
     _initialTodoProgress.clear();
     _finalTodoProgress.clear();
     _modifiedTodoIds.clear();
-    ref.read(todoManagerProvider).removeListener(_onTodoProgressChanged);
+    _todoManager.removeListener(_onTodoProgressChanged);
   }
 
   @override
@@ -266,10 +274,36 @@ class _FocusTabState extends ConsumerState<FocusTab> {
     );
   }
 
+  (String, Widget) _buildView() {
+    final timerManager = ref.watch(timerManagerProvider);
+    if (timerManager.remainingSeconds == null) {
+      if (timerManager.isRest) {
+        return ('setup', RestSelectionView());
+      } else {
+        return ('rest-selection', SetupView());
+      }
+    } else {
+      if (timerManager.isRest) {
+        return ('timer-rest', RestTimerView());
+      } else {
+        return (
+          'timer',
+          TimerView(
+            selectedDuration: timerManager.selectedDuration!,
+            remainingSeconds: timerManager.remainingSeconds!,
+            isPaused: timerManager.isPaused,
+            exitCount: timerManager.exitCount,
+            onTimerComplete: _showTimerCompleteDialog,
+          )
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final timerManager = ref.watch(timerManagerProvider);
     final todoManager = ref.watch(todoManagerProvider);
+    final (key, view) = _buildView();
 
     return Scaffold(
       appBar: AppBar(
@@ -287,17 +321,8 @@ class _FocusTabState extends ConsumerState<FocusTab> {
         switchInCurve: Curves.easeInOut,
         switchOutCurve: Curves.easeInOut,
         child: Center(
-          key: ValueKey<String>(
-              timerManager.remainingSeconds == null ? 'setup' : 'timer'),
-          child: timerManager.remainingSeconds == null
-              ? const SetupView()
-              : TimerView(
-                  selectedDuration: timerManager.selectedDuration!,
-                  remainingSeconds: timerManager.remainingSeconds!,
-                  isPaused: timerManager.isPaused,
-                  exitCount: timerManager.exitCount,
-                  onTimerComplete: _showTimerCompleteDialog,
-                ),
+          key: ValueKey<String>(key),
+          child: view,
         ),
       ),
     );
