@@ -88,7 +88,7 @@ class TimerManager with ChangeNotifier implements TimerManagerInterface {
 
     // 计算中断时长（基于暂停次数和退出次数的估算）
     final int interruptedDuration =
-        (pauseCount * 2) + (exitCount * 5); // TODO 简单估算
+        (pauseCount * 2) + (exitCount * 3); // TODO 简单估算
 
     // 创建新的FocusRecord
     final focusRecord = FocusRecord(

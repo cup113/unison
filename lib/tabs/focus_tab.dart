@@ -16,20 +16,58 @@ class FocusTab extends ConsumerStatefulWidget {
 }
 
 class _FocusTabState extends ConsumerState<FocusTab> {
+  final Map<String, int> _initialTodoProgress = {};
+  final Map<String, int> _finalTodoProgress = {};
+  final Set<String> _modifiedTodoIds = {};
+
   @override
   void initState() {
     super.initState();
-    // No need for manual listener management with Riverpod
+    _setupProgressTracking();
+  }
+
+  void _setupProgressTracking() {
+    final todoManager = ref.read(todoManagerProvider);
+
+    // Capture initial progress state for all todos
+    for (final todo in todoManager.todos) {
+      _initialTodoProgress[todo.id] = todo.progress;
+      _finalTodoProgress[todo.id] = todo.progress;
+    }
+
+    // Listen for progress changes during the session
+    todoManager.addListener(_onTodoProgressChanged);
+  }
+
+  void _onTodoProgressChanged() {
+    final todoManager = ref.read(todoManagerProvider);
+
+    // Update final progress state and track modified todos
+    for (final todo in todoManager.todos) {
+      final currentProgress = todo.progress;
+      // Todo can be created during the session
+      final initialProgress = _initialTodoProgress[todo.id] ?? 0;
+
+      if (currentProgress != initialProgress) {
+        _finalTodoProgress[todo.id] = currentProgress;
+        _modifiedTodoIds.add(todo.id);
+      }
+    }
   }
 
   void _showTimerCompleteDialog() {
     final timerManager = ref.watch(timerManagerProvider);
     final todoManager = ref.watch(todoManagerProvider);
-    final activeTodo = todoManager.getActiveTodo(includeCompleted: true);
+    final activeTodo = todoManager.getActiveTodo();
+
+    // Get all modified todos during the session
+    final modifiedTodos = todoManager.todos
+        .where((todo) => _modifiedTodoIds.contains(todo.id))
+        .toList();
+
     int actualDuration = (timerManager.selectedDuration ?? 0) -
         (timerManager.remainingSeconds ?? 0) ~/ 60;
 
-    // 提升控制器和状态管理到外部
     final durationController =
         TextEditingController(text: actualDuration.toString());
     final durationNotifier = ValueNotifier<int>(actualDuration);
@@ -39,54 +77,121 @@ class _FocusTabState extends ConsumerState<FocusTab> {
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              title: const Text('专注完成'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('恭喜你完成专注任务！'),
-                    const SizedBox(height: 16),
-                    if (activeTodo != null) ...[
-                      Text('任务: ${activeTodo.title}'),
-                      const SizedBox(height: 8),
-                      _buildDurationInput(durationController, durationNotifier),
-                      const SizedBox(height: 8),
-                      _buildProgressSlider(progressNotifier, activeTodo.total),
-                    ] else
-                      const Text('未选择任务'),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () async {
-                    await _handleTimerCompletion(
-                      activeTodo,
-                      actualDuration,
-                      durationNotifier.value,
-                      progressNotifier.value,
-                    );
-                    if (context.mounted) {
-                      Navigator.of(context).pop();
-                    }
-                    timerManager.cancelTimer(true);
-                  },
-                  child: const Text('确认'),
-                ),
+        return AlertDialog(
+          title: const Text('专注完成'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('恭喜你完成专注任务！'),
+                const SizedBox(height: 16),
+                if (activeTodo != null) ...[
+                  Text('任务: ${activeTodo.title}'),
+                  const SizedBox(height: 8),
+                  _buildDurationInput(durationController, durationNotifier),
+                  const SizedBox(height: 8),
+                  _buildProgressSlider(progressNotifier, activeTodo.total),
+                ],
+                if (modifiedTodos.isNotEmpty) ...[
+                  ...modifiedTodos.map((todo) => _buildTodoProgressSection(
+                        todo,
+                        _initialTodoProgress[todo.id] ?? 0,
+                        _finalTodoProgress[todo.id] ?? 0,
+                      )),
+                ] else
+                  const Text('本次专注期间没有任务进度变化'),
               ],
-            );
-          },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                await _handleTimerCompletion(actualDuration, activeTodo,
+                    durationNotifier.value, progressNotifier.value);
+                if (context.mounted) Navigator.of(context).pop();
+                timerManager.cancelTimer(true);
+                _cleanupProgressTracking();
+              },
+              child: const Text('确认'),
+            ),
+          ],
         );
       },
-    ).then((_) {
-      durationController.dispose();
-      durationNotifier.dispose();
-      progressNotifier.dispose();
-    });
+    );
+  }
+
+  Widget _buildTodoProgressSection(
+      Todo todo, int initialProgress, int finalProgress) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('任务: ${todo.title}'),
+        Text('进度变化: $initialProgress → $finalProgress'),
+        const SizedBox(height: 8),
+      ],
+    );
+  }
+
+  Future<void> _handleTimerCompletion(
+    int actualDuration,
+    Todo? activeTodo,
+    int lastAdjustedDuration,
+    int lastAdjustedProgress,
+  ) async {
+    final timerManager = ref.read(timerManagerProvider);
+    final todoManager = ref.read(todoManagerProvider);
+    final appStateManager = ref.read(appStateManagerProvider);
+
+    if (activeTodo != null) {
+      await todoManager.setProgress(activeTodo.id, lastAdjustedProgress);
+      await todoManager.addFocusedTime(
+        activeTodo.id,
+        lastAdjustedDuration,
+      );
+    }
+
+    // Collect all modified todos with their progress changes
+    final modifiedTodos = todoManager.todos
+        .where((todo) => _modifiedTodoIds.contains(todo.id))
+        .toList();
+
+    final progressDeltas = modifiedTodos
+        .map((todo) =>
+            _finalTodoProgress[todo.id]! - _initialTodoProgress[todo.id]!)
+        .toList();
+
+    final focusedTimes = modifiedTodos.map((_) => actualDuration).toList();
+
+    // Save focus record with all modified todos
+    if (timerManager.startTime != null &&
+        timerManager.selectedDuration != null) {
+      await appStateManager.saveFocusRecord(
+        startTime: timerManager.startTime!,
+        endTime: DateTime.now(),
+        plannedDuration: timerManager.selectedDuration!,
+        actualDuration: actualDuration,
+        pauseCount: timerManager.pauseCount,
+        exitCount: timerManager.exitCount,
+        isCompleted: true,
+        todos: modifiedTodos,
+        progressList: progressDeltas,
+        focusedTimeList: focusedTimes,
+      );
+    }
+  }
+
+  void _cleanupProgressTracking() {
+    _initialTodoProgress.clear();
+    _finalTodoProgress.clear();
+    _modifiedTodoIds.clear();
+    ref.read(todoManagerProvider).removeListener(_onTodoProgressChanged);
+  }
+
+  @override
+  void dispose() {
+    _cleanupProgressTracking();
+    super.dispose();
   }
 
   Widget _buildDurationInput(
@@ -142,56 +247,6 @@ class _FocusTabState extends ConsumerState<FocusTab> {
         );
       },
     );
-  }
-
-  Future<void> _handleTimerCompletion(
-    Todo? activeTodo,
-    int actualDuration,
-    int adjustedDuration,
-    int adjustedProgress,
-  ) async {
-    final timerManager = ref.read(timerManagerProvider);
-    final todoManager = ref.read(todoManagerProvider);
-    final appStateManager = ref.read(appStateManagerProvider);
-
-    // 更新TODO的进度和专注时间
-    if (activeTodo != null) {
-      await todoManager.setProgress(activeTodo.id, adjustedProgress);
-      await todoManager.addFocusedTime(
-        activeTodo.id,
-        adjustedDuration,
-      );
-    }
-
-    // 使用AppStateManager保存专注记录
-    if (timerManager.startTime != null &&
-        timerManager.selectedDuration != null) {
-      final endTime = DateTime.now();
-
-      // 收集需要保存的todo数据
-      List<Todo> todos = [];
-      List<int> progressList = [];
-      List<int> focusedTimeList = [];
-
-      if (activeTodo != null) {
-        todos.add(activeTodo);
-        progressList.add(adjustedProgress);
-        focusedTimeList.add(adjustedDuration);
-      }
-
-      await appStateManager.saveFocusRecord(
-        startTime: timerManager.startTime!,
-        endTime: endTime,
-        plannedDuration: timerManager.selectedDuration!,
-        actualDuration: adjustedDuration,
-        pauseCount: timerManager.pauseCount,
-        exitCount: timerManager.exitCount,
-        isCompleted: true, // 完成的计时器标记为已完成
-        todos: todos.isNotEmpty ? todos : null,
-        progressList: progressList.isNotEmpty ? progressList : null,
-        focusedTimeList: focusedTimeList.isNotEmpty ? focusedTimeList : null,
-      );
-    }
   }
 
   void _showTodoList(BuildContext context, TodoManagerInterface todoManager) {
