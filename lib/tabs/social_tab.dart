@@ -12,7 +12,7 @@ class SocialTab extends StatefulWidget {
 
 class _SocialTabState extends State<SocialTab> {
   List<Friend> _friends = [];
-  List<Map<String, dynamic>> _activities = []; // TODO make it a class
+  final List<Map<String, dynamic>> _activities = []; // TODO make it a class
   Timer? _activityTimer;
   bool _isLoading = true;
   final FriendsService _friendsService = FriendsService();

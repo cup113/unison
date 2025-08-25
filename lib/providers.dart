@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import './services/timer_manager.dart';
 import './services/todo_manager.dart';
 import './services/auth_service.dart';
+import './services/account_service.dart';
 import './app_state_manager.dart';
 
 final timerManagerProvider = ChangeNotifierProvider<TimerManager>((ref) {
@@ -14,6 +15,10 @@ final todoManagerProvider = ChangeNotifierProvider<TodoManager>((ref) {
 
 final authServiceProvider = Provider<AuthService>((ref) {
   return AuthService();
+});
+
+final accountServiceProvider = Provider<AccountService>((ref) {
+  return AccountService();
 });
 
 final appStateManagerProvider = ChangeNotifierProvider<AppStateManager>((ref) {
