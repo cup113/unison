@@ -92,7 +92,7 @@ class AccountActions extends ConsumerWidget {
 
   Future<void> _handleLogout(BuildContext context, WidgetRef ref) async {
     try {
-      await ref.read(appStateManagerProvider).logout();
+      await ref.read(accountServiceProvider).logout();
       if (context.mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(

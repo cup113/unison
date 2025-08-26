@@ -85,11 +85,10 @@ class _LoginDialogState extends ConsumerState<LoginDialog> {
     });
 
     try {
-      final appStateManager = ref.read(appStateManagerProvider);
-      await appStateManager.login(
-        _emailController.text,
-        _passwordController.text,
-      );
+      await ref.read(apiServiceProvider).login(
+            email: _emailController.text,
+            password: _passwordController.text,
+          );
 
       if (mounted) {
         Navigator.pop(context);

@@ -22,9 +22,8 @@ class _AccountTabState extends ConsumerState<AccountTab> {
   }
 
   Future<void> _loadAccountStatus() async {
+    // TODO
     try {
-      final accountService = ref.read(accountServiceProvider);
-      await accountService.getSyncEnabled();
       setState(() {
         _isLoading = false;
       });
@@ -37,11 +36,12 @@ class _AccountTabState extends ConsumerState<AccountTab> {
 
   @override
   Widget build(BuildContext context) {
-    final appStateManager = ref.watch(appStateManagerProvider);
-    final isLoggedIn = appStateManager.isLoggedIn;
-    final username = appStateManager.username;
-    final email = appStateManager.email;
-    final id = appStateManager.id;
+    final accountService = ref.watch(accountServiceProvider);
+    accountService.getUserData();
+    final isLoggedIn = accountService.userData == null;
+    final username = accountService.userData?.name ?? '未登录';
+    final email = accountService.userData?.email ?? '---';
+    final id = accountService.userData?.id ?? '---';
 
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());

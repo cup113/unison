@@ -134,6 +134,14 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "2.0.4"
+  chunked_stream:
+    dependency: transitive
+    description:
+      name: chunked_stream
+      sha256: b2fde5f81d780f0c1699b8347cae2e413412ae947fc6e64727cc48c6bb54c95c
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "1.4.2"
   clock:
     dependency: transitive
     description:
@@ -142,6 +150,14 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "1.1.2"
+  codable_forked:
+    dependency: transitive
+    description:
+      name: codable_forked
+      sha256: "902e6f90fa4d97be2d02931d0a6e555e83252fd2f8b632e26a6385c50964e473"
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "1.0.0+3"
   code_builder:
     dependency: transitive
     description:
@@ -230,6 +246,22 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "0.7.11"
+  dio:
+    dependency: transitive
+    description:
+      name: dio
+      sha256: d90ee57923d1828ac14e492ca49440f65477f4bb1263575900be731a3dac66a9
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "5.9.0"
+  dio_web_adapter:
+    dependency: transitive
+    description:
+      name: dio_web_adapter
+      sha256: "7586e476d70caecaf1686d21eee7247ea43ef5c345eab9e0cc3583ff13378d78"
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "2.1.1"
   fake_async:
     dependency: transitive
     description:
@@ -501,6 +533,14 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "1.3.0"
+  logging_appenders:
+    dependency: transitive
+    description:
+      name: logging_appenders
+      sha256: "7fefa09636824f312432721c0bf77967ab19003116650729bd202bdf98142d70"
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "1.4.0+1"
   macros:
     dependency: transitive
     description:
@@ -565,6 +605,38 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "0.5.0"
+  open_api_forked:
+    dependency: transitive
+    description:
+      name: open_api_forked
+      sha256: e815a0adbb290b6b460c48808de2b393f95522b1016cdb5d54cc8098cc8d5d2f
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "3.0.0+6"
+  openapi_base:
+    dependency: transitive
+    description:
+      name: openapi_base
+      sha256: a9f7ef85da91fa68092000bc3d3f96a979ac5ce8b8650d3c8292f67e02cbede2
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "2.0.0"
+  openapi_code_builder:
+    dependency: "direct dev"
+    description:
+      name: openapi_code_builder
+      sha256: "7dac5d101cca780e706505524343594580f7d98117403d0a31ea642e9887a35c"
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "1.7.0+2"
+  openapi_generator_annotations:
+    dependency: "direct main"
+    description:
+      name: openapi_generator_annotations
+      sha256: "5b4d548c18b417cfc6abd03098a28971d6211d6e10ec57e4f8fb9b2eb46c0641"
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "6.1.0"
   package_config:
     dependency: transitive
     description:
@@ -693,6 +765,22 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "1.5.0"
+  quiver:
+    dependency: transitive
+    description:
+      name: quiver
+      sha256: ea0b925899e64ecdfbf9c7becb60d5b50e706ade44a85b2363be2a22d88117d2
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "3.2.2"
+  recase:
+    dependency: transitive
+    description:
+      name: recase
+      sha256: e4eb4ec2dcdee52dcf99cb4ceabaffc631d7424ee55e56f280bc039737f89213
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "4.1.0"
   riverpod:
     dependency: transitive
     description:
@@ -906,6 +994,14 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "1.4.0"
+  uri:
+    dependency: transitive
+    description:
+      name: uri
+      sha256: "889eea21e953187c6099802b7b4cf5219ba8f3518f604a1033064d45b1b8268a"
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "1.0.0"
   uuid:
     dependency: transitive
     description:

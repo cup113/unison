@@ -1,15 +1,21 @@
-import 'package:shared_preferences/shared_preferences.dart';
+import '../services/secure_storage_service.dart';
+import '../api/unison_api_service.dart';
 
 class AccountService {
-  static const String _syncEnabledKey = 'sync_enabled';
+  final _secureStorageService = SecureStorageService();
+  AuthRegisterPost200ResponseUser? _userData;
+  AuthRegisterPost200ResponseUser? get userData => _userData;
 
-  Future<bool> getSyncEnabled() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(_syncEnabledKey) ?? false;
+  Future<AuthRegisterPost200ResponseUser?> getUserData() async {
+    _userData = await _secureStorageService.getUserData();
+    return _userData;
   }
 
-  Future<void> setSyncEnabled(bool enabled) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_syncEnabledKey, enabled);
+  Future<void> logout() async {
+    await _secureStorageService.clearAllAuthData();
+  }
+
+  Future<void> storeUserInfo(AuthRegisterPost200ResponseUser userData) async {
+    await _secureStorageService.storeUserData(userData);
   }
 }

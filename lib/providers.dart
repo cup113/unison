@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import './services/timer_manager.dart';
 import './services/todo_manager.dart';
-import './services/auth_service.dart';
 import './services/account_service.dart';
+import './api/unison_api_service.dart';
 import './app_state_manager.dart';
 
 final timerManagerProvider = ChangeNotifierProvider<TimerManager>((ref) {
@@ -13,8 +13,8 @@ final todoManagerProvider = ChangeNotifierProvider<TodoManager>((ref) {
   return TodoManager();
 });
 
-final authServiceProvider = Provider<AuthService>((ref) {
-  return AuthService();
+final apiServiceProvider = Provider<UnisonApiService>((ref) {
+  return UnisonApiService();
 });
 
 final accountServiceProvider = Provider<AccountService>((ref) {
@@ -25,14 +25,14 @@ final appStateManagerProvider = ChangeNotifierProvider<AppStateManager>((ref) {
   return AppStateManager(
     timerManager: ref.read(timerManagerProvider),
     todoManager: ref.read(todoManagerProvider),
-    authService: ref.read(authServiceProvider),
+    apiService: ref.read(apiServiceProvider),
   );
 });
 
 final isLoadingProvider = StateProvider<bool>((ref) => true);
 
 final authStateProvider = FutureProvider<void>((ref) async {
-  final appStateManager = ref.read(appStateManagerProvider);
-  await appStateManager.initializeAuth();
+  final accountService = AccountService();
+  await accountService.getUserData();
   ref.read(isLoadingProvider.notifier).state = false;
 });

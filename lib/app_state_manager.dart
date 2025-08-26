@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import './services/timer_manager.dart';
 import './services/todo_manager.dart';
 import './models/focus.dart';
-import './services/auth_service.dart';
+import './api/unison_api_service.dart';
 import './constants/app_constants.dart';
 
 class AppStateManager with ChangeNotifier {
@@ -10,99 +10,28 @@ class AppStateManager with ChangeNotifier {
 
   final TimerManager _timerManager;
   final TodoManager _todoManager;
-  final AuthService _authService;
-
-  bool _isLoggedIn = false;
-  String _username = '';
-  String _email = '';
-  String _id = '';
-  bool _isInitialized = false;
+  final UnisonApiService _apiService;
 
   AppStateManager({
     required TimerManager timerManager,
     required TodoManager todoManager,
-    required AuthService authService,
+    required UnisonApiService apiService,
   })  : _timerManager = timerManager,
         _todoManager = todoManager,
-        _authService = authService {
+        _apiService = apiService {
     _timerManager.addListener(_onTimerChanged);
     _todoManager.addListener(_onTodoChanged);
   }
 
   TimerManager get timerManager => _timerManager;
   TodoManager get todoManager => _todoManager;
-
-  bool get isLoggedIn => _isLoggedIn;
-  String get username => _username;
-  String get email => _email;
-  bool get isInitialized => _isInitialized;
-  String get id => _id;
+  UnisonApiService get apiService => _apiService;
 
   void _onTimerChanged() {
     notifyListeners();
   }
 
   void _onTodoChanged() {
-    notifyListeners();
-  }
-
-  Future<void> initializeAuth() async {
-    try {
-      final userData = await _authService.initializeAuth();
-      if (userData != null) {
-        _isLoggedIn = true;
-        _username = userData['name'] ?? '';
-        _email = userData['email'] ?? '';
-        _id = userData['id'] ?? '';
-      } else {
-        _isLoggedIn = false;
-        _username = '';
-        _email = '';
-        _id = '';
-      }
-    } catch (e) {
-      _isLoggedIn = false;
-      _username = '';
-      _email = '';
-      _id = '';
-    } finally {
-      _isInitialized = true;
-      notifyListeners();
-    }
-  }
-
-  Future<void> login(String email, String password) async {
-    await _authService.login(email, password);
-    await updateAuthState();
-  }
-
-  Future<void> register(String name, String email, String password) async {
-    await _authService.register(name, email, password);
-    await updateAuthState();
-  }
-
-  Future<void> logout() async {
-    await _authService.logout();
-    _isLoggedIn = false;
-    _username = '';
-    _email = '';
-    _id = '';
-    notifyListeners();
-  }
-
-  Future<void> updateAuthState() async {
-    final userData = await _authService.getUserData();
-    if (userData != null) {
-      _isLoggedIn = true;
-      _username = userData['name'] ?? '';
-      _email = userData['email'] ?? '';
-      _id = userData['id'] ?? '';
-    } else {
-      _isLoggedIn = false;
-      _username = '';
-      _email = '';
-      _id = '';
-    }
     notifyListeners();
   }
 

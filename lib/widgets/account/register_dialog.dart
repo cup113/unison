@@ -127,11 +127,11 @@ class _RegisterDialogState extends ConsumerState<RegisterDialog> {
     });
 
     try {
-      final appStateManager = ref.read(appStateManagerProvider);
-      await appStateManager.register(
-        _usernameController.text,
-        _emailController.text,
-        _passwordController.text,
+      final apiService = ref.read(apiServiceProvider);
+      await apiService.register(
+        name: _usernameController.text,
+        email: _emailController.text,
+        password: _passwordController.text,
       );
 
       if (mounted) {

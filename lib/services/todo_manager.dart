@@ -81,23 +81,8 @@ class TodoManager with ChangeNotifier implements TodoManagerInterface {
     try {
       final prefs = await SharedPreferences.getInstance();
 
-      // 保存待办事项列表
-      final List<Map<String, dynamic>> todoListJson = _todos
-          .map(
-            (todo) => {
-              'id': todo.id,
-              'title': todo.title,
-              'progress': todo.progress,
-              'isActive': todo.isActive,
-              'isArchived': todo.isArchived,
-              'category': todo.category,
-              'estimatedTime': todo.estimatedTime,
-              'focusedTime': todo.focusedTime,
-              'total': todo.total,
-            },
-          )
-          .toList();
-      await prefs.setString(_todoListKey, json.encode(todoListJson));
+      await prefs.setString(_todoListKey,
+          json.encode(_todos.map((todo) => todo.toJson()).toList()));
     } catch (e) {
       throw StorageError('Failed to save todos to storage', underlyingError: e);
     }

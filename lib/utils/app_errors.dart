@@ -17,6 +17,14 @@ class AuthError extends AppError {
   AuthError(super.message, {super.underlyingError});
 }
 
+class ApiError extends AppError {
+  ApiError(super.message, {super.underlyingError});
+}
+
+class ServerError extends ApiError {
+  ServerError(super.message, {super.underlyingError});
+}
+
 class StorageError extends AppError {
   StorageError(super.message, {super.underlyingError});
 }

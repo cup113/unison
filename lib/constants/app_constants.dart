@@ -32,6 +32,7 @@ class AppConstants {
   static const String todoListKey = 'todo_list_v2';
   static const String timerStateKey = 'timer_state_v2';
   static const String focusRecordsKey = 'focus_records_v4';
+  static const String userInfoKey = 'user_info_v1';
 
   // Network timeouts
   static const Duration connectionTimeout = Duration(seconds: 30);

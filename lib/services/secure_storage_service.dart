@@ -1,5 +1,8 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unison/api/generated/lib/api.dart';
+import '../constants/app_constants.dart';
+import 'dart:convert';
 
 class SecureStorageService {
   static const FlutterSecureStorage _secureStorage = FlutterSecureStorage();
@@ -18,38 +21,25 @@ class SecureStorageService {
     await _secureStorage.delete(key: _authTokenKey);
   }
 
-  Future<void> storeUserData(Map<String, dynamic> userData) async {
+  Future<void> storeUserData(AuthRegisterPost200ResponseUser userData) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('user_id', userData['id']);
-    await prefs.setString('user_name', userData['name']);
-    await prefs.setString('user_email', userData['email']);
-    await prefs.setBool('is_logged_in', true);
+    await prefs.setString(
+        AppConstants.userInfoKey, json.encode(userData.toJson()));
   }
 
-  Future<Map<String, dynamic>?> getUserData() async {
+  Future<AuthRegisterPost200ResponseUser?> getUserData() async {
     final prefs = await SharedPreferences.getInstance();
-    final userId = prefs.getString('user_id');
-    final userName = prefs.getString('user_name');
-    final userEmail = prefs.getString('user_email');
-    final isLoggedIn = prefs.getBool('is_logged_in') ?? false;
+    final user = prefs.getString(AppConstants.userInfoKey);
 
-    if (isLoggedIn && userId != null && userName != null && userEmail != null) {
-      return {
-        'id': userId,
-        'name': userName,
-        'email': userEmail,
-        'is_logged_in': isLoggedIn,
-      };
+    if (user != null && user.isNotEmpty) {
+      return json.decode(user);
     }
     return null;
   }
 
   Future<void> clearUserData() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('user_id');
-    await prefs.remove('user_name');
-    await prefs.remove('user_email');
-    await prefs.setBool('is_logged_in', false);
+    await prefs.remove(AppConstants.userInfoKey);
   }
 
   Future<void> clearAllAuthData() async {

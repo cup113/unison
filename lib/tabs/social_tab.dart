@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import '../services/friends_service.dart';
-import '../models/friend.dart';
+import '../api/unison_api_service.dart';
 
 class SocialTab extends StatefulWidget {
   const SocialTab({super.key});
@@ -11,11 +10,11 @@ class SocialTab extends StatefulWidget {
 }
 
 class _SocialTabState extends State<SocialTab> {
-  List<Friend> _friends = [];
+  List<FriendsListGet200ResponseInner> _friends = [];
   final List<Map<String, dynamic>> _activities = []; // TODO make it a class
   Timer? _activityTimer;
   bool _isLoading = true;
-  final FriendsService _friendsService = FriendsService();
+  final UnisonApiService _apiService = UnisonApiService();
 
   @override
   void initState() {
@@ -31,7 +30,7 @@ class _SocialTabState extends State<SocialTab> {
 
   Future<void> _loadFriends() async {
     try {
-      final friends = await _friendsService.getFriendsList();
+      final friends = await _apiService.getFriendsList();
       if (!mounted) return;
 
       setState(() {
@@ -82,8 +81,7 @@ class _SocialTabState extends State<SocialTab> {
             onPressed: () async {
               if (userIdController.text.isNotEmpty) {
                 try {
-                  await _friendsService
-                      .sendFriendRequest(userIdController.text);
+                  await _apiService.sendFriendRequest(userIdController.text);
                   if (!mounted) return;
                   if (context.mounted) {
                     Navigator.pop(context);
@@ -137,7 +135,7 @@ class _SocialTabState extends State<SocialTab> {
           TextButton(
             onPressed: () async {
               try {
-                await _friendsService.refuseFriendRequest(
+                await _apiService.refuseFriendRequest(
                     friendId, reasonController.text);
                 setState(() {
                   _friends.removeWhere((friend) => friend.id == friendId);
@@ -166,7 +164,7 @@ class _SocialTabState extends State<SocialTab> {
 
   Future<void> _acceptFriend(String friendRelationId) async {
     try {
-      await _friendsService.approveFriendRequest(friendRelationId);
+      await _apiService.approveFriendRequest(friendRelationId);
       if (!mounted) return;
 
       setState(() {
@@ -216,7 +214,7 @@ class _SocialTabState extends State<SocialTab> {
           TextButton(
             onPressed: () async {
               try {
-                await _friendsService.refuseFriendRequest(
+                await _apiService.refuseFriendRequest(
                     friendRelationId, reasonController.text);
                 if (!mounted) return;
 
@@ -307,7 +305,7 @@ class _SocialTabState extends State<SocialTab> {
         itemCount: _friends.length,
         itemBuilder: (context, index) {
           final friend = _friends[index];
-          final refused = friend.refuseReason?.isNotEmpty;
+          final refused = friend.refuseReason.isNotEmpty;
           return Card(
             child: ListTile(
               title: Text(friend.name),
@@ -414,7 +412,7 @@ class _SocialTabState extends State<SocialTab> {
     );
   }
 
-  void _showFriendDetails(Friend friend) {
+  void _showFriendDetails(FriendsListGet200ResponseInner friend) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -424,10 +422,9 @@ class _SocialTabState extends State<SocialTab> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('状态: ${friend.accepted ? '已接受' : '等待接受'}'),
-            if (friend.refuseReason != null && friend.refuseReason!.isNotEmpty)
+            if (friend.refuseReason.isNotEmpty)
               Text('拒绝原因: ${friend.refuseReason}'),
-            if (friend.updated != null)
-              Text('更新时间: ${friend.updated!.toLocal()}'),
+            if (friend.updated != null) Text('更新时间: ${friend.updated}'),
           ],
         ),
         actions: [

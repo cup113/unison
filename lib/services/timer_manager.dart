@@ -224,14 +224,15 @@ class TimerManager with ChangeNotifier implements TimerManagerInterface {
   void cancelTimer(bool finished) {
     _timer?.cancel();
 
-    // 如果计时器已经开始且有实际专注时间，则保存记录
+    bool isRest = true;
+
     if (_state.startTime != null && _state.selectedDuration != null) {
       final endTime = DateTime.now();
       final actualDurationMinutes = (_state.selectedDuration! * 60 -
               (_state.remainingSeconds ?? _state.selectedDuration! * 60)) ~/
           60;
 
-      if (actualDurationMinutes > 0 && !finished) {
+      if (!finished && actualDurationMinutes > 0) {
         // TODO: Currently, when finished, there is another call, and it should be unified later.
         saveFocusRecord(
           focusId: nanoid(),
@@ -243,11 +244,12 @@ class TimerManager with ChangeNotifier implements TimerManagerInterface {
           exitCount: _state.exitCount,
           isCompleted: finished, // 根据用户操作显式设置完成状态
         );
+        isRest = actualDurationMinutes > 0;
       }
     }
 
     // 重置状态
-    _state = TimerState(isRest: true);
+    _state = TimerState(isRest: isRest);
     saveToStorage();
     notifyListeners();
   }
