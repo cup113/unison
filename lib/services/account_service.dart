@@ -18,4 +18,8 @@ class AccountService {
   Future<void> storeUserInfo(AuthRegisterPost200ResponseUser userData) async {
     await _secureStorageService.storeUserData(userData);
   }
+
+  Future<void> storeToken(String token) async {
+    await _secureStorageService.storeAuthToken(token);
+  }
 }

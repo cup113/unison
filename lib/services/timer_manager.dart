@@ -244,8 +244,8 @@ class TimerManager with ChangeNotifier implements TimerManagerInterface {
           exitCount: _state.exitCount,
           isCompleted: finished, // 根据用户操作显式设置完成状态
         );
-        isRest = actualDurationMinutes > 0;
       }
+      isRest = actualDurationMinutes > 0;
     }
 
     // 重置状态

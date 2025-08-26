@@ -4,8 +4,10 @@ import '../../providers.dart';
 
 class RegisterDialog extends ConsumerStatefulWidget {
   final bool isLoggedIn;
+  final void Function() onRegisterSuccess;
 
-  const RegisterDialog({super.key, required this.isLoggedIn});
+  const RegisterDialog(
+      {super.key, required this.isLoggedIn, required this.onRegisterSuccess});
 
   @override
   ConsumerState<RegisterDialog> createState() => _RegisterDialogState();
@@ -128,11 +130,14 @@ class _RegisterDialogState extends ConsumerState<RegisterDialog> {
 
     try {
       final apiService = ref.read(apiServiceProvider);
-      await apiService.register(
+      final response = await apiService.register(
         name: _usernameController.text,
         email: _emailController.text,
         password: _passwordController.text,
       );
+      ref.read(accountServiceProvider).storeUserInfo(response.user);
+      ref.read(accountServiceProvider).storeToken(response.token);
+      widget.onRegisterSuccess();
 
       if (mounted) {
         Navigator.pop(context);

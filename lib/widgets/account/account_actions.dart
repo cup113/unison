@@ -8,12 +8,14 @@ class AccountActions extends ConsumerWidget {
   final bool isLoggedIn;
   final String username;
   final String email;
+  final void Function() onRefresh;
 
   const AccountActions({
     super.key,
     required this.isLoggedIn,
     required this.username,
     required this.email,
+    required this.onRefresh,
   });
 
   @override
@@ -58,14 +60,16 @@ class AccountActions extends ConsumerWidget {
   void _showLoginDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => LoginDialog(isLoggedIn: isLoggedIn),
+      builder: (context) =>
+          LoginDialog(isLoggedIn: isLoggedIn, onLoginSuccess: onRefresh),
     );
   }
 
   void _showRegisterDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => RegisterDialog(isLoggedIn: isLoggedIn),
+      builder: (context) =>
+          RegisterDialog(isLoggedIn: isLoggedIn, onRegisterSuccess: onRefresh),
     );
   }
 

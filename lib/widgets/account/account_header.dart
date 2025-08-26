@@ -72,7 +72,7 @@ class AccountHeader extends StatelessWidget {
                     ),
                   ] else ...[
                     Text(
-                      '登录以同步数据',
+                      '登录以使用联机功能',
                       style: TextStyle(
                         fontSize: 16,
                         color: Colors.grey[600],

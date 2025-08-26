@@ -32,7 +32,7 @@ class SecureStorageService {
     final user = prefs.getString(AppConstants.userInfoKey);
 
     if (user != null && user.isNotEmpty) {
-      return json.decode(user);
+      return AuthRegisterPost200ResponseUser.fromJson(json.decode(user));
     }
     return null;
   }

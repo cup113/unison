@@ -4,8 +4,10 @@ import '../../providers.dart';
 
 class LoginDialog extends ConsumerStatefulWidget {
   final bool isLoggedIn;
+  final void Function() onLoginSuccess;
 
-  const LoginDialog({super.key, required this.isLoggedIn});
+  const LoginDialog(
+      {super.key, required this.isLoggedIn, required this.onLoginSuccess});
 
   @override
   ConsumerState<LoginDialog> createState() => _LoginDialogState();
@@ -85,10 +87,13 @@ class _LoginDialogState extends ConsumerState<LoginDialog> {
     });
 
     try {
-      await ref.read(apiServiceProvider).login(
+      final response = await ref.read(apiServiceProvider).login(
             email: _emailController.text,
             password: _passwordController.text,
           );
+      ref.read(accountServiceProvider).storeUserInfo(response.user);
+      ref.read(accountServiceProvider).storeToken(response.token);
+      widget.onLoginSuccess();
 
       if (mounted) {
         Navigator.pop(context);

@@ -1,3 +1,5 @@
+import 'package:unison/utils/crypto_utils.dart';
+
 import '../services/secure_storage_service.dart';
 import '../utils/app_errors.dart';
 import '../constants/app_constants.dart';
@@ -22,14 +24,6 @@ class UnisonApiService {
     _apiClient = ApiClient(basePath: ConfigService.serverUrl);
   }
 
-  /// Initialize the API service with authentication
-  Future<void> initialize() async {
-    final token = await _storageService.getAuthToken();
-    if (token != null) {
-      _apiClient.addDefaultHeader('Authorization', 'Bearer $token');
-    }
-  }
-
   /// Update authentication token
   Future<void> updateAuthToken(String token) async {
     await _storageService.storeAuthToken(token);
@@ -45,7 +39,7 @@ class UnisonApiService {
     if (token == null) {
       throw AuthError("No token found");
     } else {
-      return token;
+      return 'Bearer $token';
     }
   }
 
@@ -83,7 +77,7 @@ class UnisonApiService {
       final authApi = AuthApi(_apiClient);
       final request = AuthLoginPostRequest(
         email: email,
-        password: password,
+        password: CryptoUtils.hashPassword(password),
       );
 
       final response =
@@ -106,7 +100,7 @@ class UnisonApiService {
       final request = AuthRegisterPostRequest(
         name: name,
         email: email,
-        password: password,
+        password: CryptoUtils.hashPassword(password),
       );
 
       final response =

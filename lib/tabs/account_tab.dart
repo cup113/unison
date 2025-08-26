@@ -38,7 +38,7 @@ class _AccountTabState extends ConsumerState<AccountTab> {
   Widget build(BuildContext context) {
     final accountService = ref.watch(accountServiceProvider);
     accountService.getUserData();
-    final isLoggedIn = accountService.userData == null;
+    final isLoggedIn = accountService.userData != null;
     final username = accountService.userData?.name ?? '未登录';
     final email = accountService.userData?.email ?? '---';
     final id = accountService.userData?.id ?? '---';
@@ -68,6 +68,9 @@ class _AccountTabState extends ConsumerState<AccountTab> {
               isLoggedIn: isLoggedIn,
               username: username,
               email: email,
+              onRefresh: () {
+                setState(() {});
+              },
             ),
             const SizedBox(height: 24),
             const AppInfo(),
