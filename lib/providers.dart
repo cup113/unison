@@ -3,7 +3,7 @@ import './services/timer_manager.dart';
 import './services/todo_manager.dart';
 import './services/account_service.dart';
 import './api/unison_api_service.dart';
-import './app_state_manager.dart';
+
 
 final timerManagerProvider = ChangeNotifierProvider<TimerManager>((ref) {
   return TimerManager();
@@ -19,14 +19,6 @@ final apiServiceProvider = Provider<UnisonApiService>((ref) {
 
 final accountServiceProvider = Provider<AccountService>((ref) {
   return AccountService();
-});
-
-final appStateManagerProvider = ChangeNotifierProvider<AppStateManager>((ref) {
-  return AppStateManager(
-    timerManager: ref.read(timerManagerProvider),
-    todoManager: ref.read(todoManagerProvider),
-    apiService: ref.read(apiServiceProvider),
-  );
 });
 
 final isLoadingProvider = StateProvider<bool>((ref) => true);

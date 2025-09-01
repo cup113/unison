@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'active_todo_widget.dart';
 import '../providers.dart';
-import '../app_state_manager.dart';
+import '../constants/app_constants.dart';
 
 class SetupView extends ConsumerWidget {
   const SetupView({
@@ -27,7 +27,7 @@ class SetupView extends ConsumerWidget {
             alignment: WrapAlignment.center,
             spacing: 16,
             runSpacing: 16,
-            children: AppStateManager.presetDurations.map((minutes) {
+            children: AppConstants.presetDurations.map((minutes) {
               return ElevatedButton(
                 onPressed: () {
                   final timerManager = ref.read(timerManagerProvider);

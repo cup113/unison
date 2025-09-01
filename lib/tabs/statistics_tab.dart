@@ -23,8 +23,8 @@ class _StatisticsTabState extends ConsumerState<StatisticsTab> {
 
   Future<void> _loadRecords() async {
     try {
-      final appStateManager = ref.read(appStateManagerProvider);
-      _records = await appStateManager.getFocusRecords();
+      final timerManager = ref.read(timerManagerProvider);
+      _records = await timerManager.getFocusRecords();
       // 按时间倒序排列
       _records
           .sort((a, b) => b.focusRecord.start.compareTo(a.focusRecord.start));
@@ -383,8 +383,8 @@ class _StatisticsTabState extends ConsumerState<StatisticsTab> {
   // 添加删除记录方法
   Future<void> _deleteRecord(FocusSession session) async {
     try {
-      final appStateManager = ref.read(appStateManagerProvider);
-      await appStateManager.deleteFocusRecord(session.focusRecord.id);
+      final timerManager = ref.read(timerManagerProvider);
+      await timerManager.deleteFocusRecord(session.focusRecord.id);
       await _loadRecords(); // 重新加载数据
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

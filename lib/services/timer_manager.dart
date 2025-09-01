@@ -1,17 +1,12 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:nanoid2/nanoid2.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../models/focus.dart';
 import '../models/timer_state.dart';
-import '../constants/app_constants.dart';
 import 'timer_manager_interface.dart';
+import 'storage_service.dart';
 
 class TimerManager with ChangeNotifier implements TimerManagerInterface {
-  static const String _timerStateKey = AppConstants.timerStateKey;
-  static const String _focusRecordsKey = AppConstants.focusRecordsKey;
-
   TimerState _state = TimerState();
   Timer? _timer;
   DateTime? _lastTickTime;
@@ -37,35 +32,23 @@ class TimerManager with ChangeNotifier implements TimerManagerInterface {
 
   @override
   Future<void> loadFromStorage() async {
-    final prefs = await SharedPreferences.getInstance();
-    final timerStateString = prefs.getString(_timerStateKey);
+    final state = await StorageService.loadTimerState();
+    if (state != null) {
+      _state = state;
 
-    if (timerStateString != null) {
-      try {
-        _state = TimerState.fromJson(json.decode(timerStateString));
-
-        // 如果有待定的计时器，则恢复它
-        final shouldResume = _state.remainingSeconds != null &&
-            _state.remainingSeconds! > 0 &&
-            !_state.isPaused;
-        if (shouldResume) {
-          resumeTimer();
-        }
-      } catch (e) {
-        _state = TimerState(isRest: false);
+      // 如果有待定的计时器，则恢复它
+      final shouldResume = _state.remainingSeconds != null &&
+          _state.remainingSeconds! > 0 &&
+          !_state.isPaused;
+      if (shouldResume) {
+        resumeTimer();
       }
     }
   }
 
   @override
   Future<void> saveToStorage() async {
-    final prefs = await SharedPreferences.getInstance();
-
-    if (_state.selectedDuration != null) {
-      prefs.setString(_timerStateKey, json.encode(_state.toJson()));
-    } else {
-      prefs.remove(_timerStateKey);
-    }
+    await StorageService.saveTimerState(_state);
   }
 
   @override
@@ -83,10 +66,6 @@ class TimerManager with ChangeNotifier implements TimerManagerInterface {
     if (!isRest) {
       _state = TimerState(isRest: true);
     }
-    final prefs = await SharedPreferences.getInstance();
-    final recordsString = prefs.getString(_focusRecordsKey);
-    final List<dynamic> records =
-        recordsString != null ? json.decode(recordsString) : [];
 
     // 计算中断时长（基于暂停次数和退出次数的估算）
     final int interruptedDuration =
@@ -104,12 +83,7 @@ class TimerManager with ChangeNotifier implements TimerManagerInterface {
     );
 
     // 如果有todo数据，创建FocusTodo记录
-    final List<FocusTodo> focusTodos = [];
-    if (todoData != null) {
-      for (int i = 0; i < todoData.length; i++) {
-        focusTodos.add(todoData[i]);
-      }
-    }
+    final List<FocusTodo> focusTodos = todoData ?? [];
 
     // 创建FocusSession
     final focusSession = FocusSession(
@@ -117,40 +91,20 @@ class TimerManager with ChangeNotifier implements TimerManagerInterface {
       focusTodos: focusTodos,
     );
 
-    records.add(focusSession.toJson());
-    prefs.setString(_focusRecordsKey, json.encode(records));
+    // 加载现有记录，添加新记录并保存
+    final existingRecords = await StorageService.loadFocusRecords();
+    existingRecords.add(focusSession);
+    await StorageService.saveFocusRecords(existingRecords);
   }
 
   @override
   Future<List<FocusSession>> getFocusRecords() async {
-    final prefs = await SharedPreferences.getInstance();
-    final recordsString = prefs.getString(_focusRecordsKey);
-
-    if (recordsString != null) {
-      try {
-        final List<dynamic> records = json.decode(recordsString);
-        return records.map((record) => FocusSession.fromJson(record)).toList();
-      } catch (e) {
-        return [];
-      }
-    }
-    return [];
+    return await StorageService.loadFocusRecords();
   }
 
   @override
   Future<void> deleteFocusRecord(String id) async {
-    final prefs = await SharedPreferences.getInstance();
-    final recordsString = prefs.getString(_focusRecordsKey);
-
-    if (recordsString != null) {
-      try {
-        final List<dynamic> records = json.decode(recordsString);
-        records.removeWhere((record) => record['focusRecord']['id'] == id);
-        prefs.setString(_focusRecordsKey, json.encode(records));
-      } catch (e) {
-        // 如果解析失败，不做任何操作
-      }
-    }
+    await StorageService.deleteFocusRecord(id);
   }
 
   @override

@@ -1,75 +1,26 @@
 import 'dart:collection';
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:nanoid2/nanoid2.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unison/utils/list_extensions.dart';
 import '../models/todo.dart';
-import '../constants/app_constants.dart';
 import '../utils/app_errors.dart';
 import 'todo_manager_interface.dart';
+import 'storage_service.dart';
 
 class TodoManager with ChangeNotifier implements TodoManagerInterface {
   final List<Todo> _todos = [];
-  final List<VoidCallback> _listeners = [];
-
-  static const String _todoListKey = AppConstants.todoListKey;
 
   @override
   UnmodifiableListView<Todo> get todos => UnmodifiableListView(_todos);
 
-  @override
-  void addListener(VoidCallback listener) {
-    _listeners.add(listener);
-  }
-
-  @override
-  void removeListener(VoidCallback listener) {
-    _listeners.remove(listener);
-  }
-
-  void _notifyListeners() {
-    final listeners = List<VoidCallback>.from(_listeners);
-    for (final listener in listeners) {
-      listener();
-    }
-  }
+  // 使用 ChangeNotifier 的内置监听器功能，无需手动实现
 
   @override
   Future<void> loadFromStorage() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-
-      // 加载待办事项列表
-      final todoListString = prefs.getString(_todoListKey);
-      if (todoListString != null) {
-        try {
-          final List<dynamic> todoListJson = json.decode(todoListString);
-          _todos.clear();
-          for (final todoJson in todoListJson) {
-            _todos.add(
-              Todo(
-                id: todoJson['id'],
-                title: todoJson['title'],
-                progress: todoJson['progress'],
-                isActive: todoJson['isActive'],
-                isArchived: todoJson['isArchived'] ?? false,
-                category: todoJson['category'],
-                estimatedTime: todoJson['estimatedTime'],
-                focusedTime: todoJson['focusedTime'] ?? 0,
-                total: todoJson['total'] ?? 10,
-              ),
-            );
-          }
-        } catch (e) {
-          // If JSON parsing fails, clear the todos and continue
-          _todos.clear();
-          throw StorageError('Failed to parse todo list from storage',
-              underlyingError: e);
-        }
-      }
-
-      _notifyListeners();
+      _todos.clear();
+      _todos.addAll(await StorageService.loadTodos());
+      notifyListeners();
     } catch (e) {
       throw StorageError('Failed to load todos from storage',
           underlyingError: e);
@@ -79,10 +30,7 @@ class TodoManager with ChangeNotifier implements TodoManagerInterface {
   @override
   Future<void> saveToStorage() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-
-      await prefs.setString(_todoListKey,
-          json.encode(_todos.map((todo) => todo.toJson()).toList()));
+      await StorageService.saveTodos(_todos);
     } catch (e) {
       throw StorageError('Failed to save todos to storage', underlyingError: e);
     }
@@ -100,14 +48,14 @@ class TodoManager with ChangeNotifier implements TodoManagerInterface {
     );
     _todos.add(todo);
     await saveToStorage();
-    _notifyListeners();
+    notifyListeners();
   }
 
   @override
   Future<void> removeTodo(String id) async {
     _todos.removeWhere((todo) => todo.id == id);
     await saveToStorage();
-    _notifyListeners();
+    notifyListeners();
   }
 
   @override
@@ -129,7 +77,7 @@ class TodoManager with ChangeNotifier implements TodoManagerInterface {
         total: total,
       );
       await saveToStorage();
-      _notifyListeners();
+      notifyListeners();
     }
   }
 
@@ -140,7 +88,7 @@ class TodoManager with ChangeNotifier implements TodoManagerInterface {
     if (index != -1) {
       _todos[index] = _todos[index].copyWith(progress: progress);
       await saveToStorage();
-      _notifyListeners();
+      notifyListeners();
     }
   }
 
@@ -153,7 +101,7 @@ class TodoManager with ChangeNotifier implements TodoManagerInterface {
         focusedTime: _todos[index].focusedTime + minutes,
       );
       await saveToStorage();
-      _notifyListeners();
+      notifyListeners();
     }
   }
 
@@ -175,7 +123,7 @@ class TodoManager with ChangeNotifier implements TodoManagerInterface {
     }
 
     await saveToStorage();
-    _notifyListeners();
+    notifyListeners();
   }
 
   @override
@@ -185,7 +133,7 @@ class TodoManager with ChangeNotifier implements TodoManagerInterface {
     final newValue = !_todos[index].isArchived;
     _todos[index] = _todos[index].copyWith(isArchived: newValue);
     await saveToStorage();
-    _notifyListeners();
+    notifyListeners();
   }
 
   @override
