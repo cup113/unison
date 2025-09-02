@@ -5,6 +5,7 @@ import '../utils/app_errors.dart';
 import '../constants/app_constants.dart';
 import '../services/network_service.dart';
 import '../services/config_service.dart';
+import '../services/logging_service.dart';
 import 'package:unison/api/generated/lib/api.dart';
 export 'package:unison/api/generated/lib/api.dart';
 
@@ -44,15 +45,24 @@ class UnisonApiService {
   }
 
   /// Execute API call with proper error handling and connectivity check
-  Future<T> executeApiCall<T>(Future<T> Function() apiCall) async {
+  Future<T> executeApiCall<T>(Future<T> Function() apiCall, {String? operationName}) async {
+    final operation = operationName ?? 'API call';
+    
     if (!await NetworkService.isConnected()) {
+      LoggingService().warning('Network unavailable for $operation');
       throw NetworkError(AppConstants.networkUnavailable);
     }
 
     try {
-      return await apiCall();
+      LoggingService().debug('Starting API call: $operation');
+      final result = await apiCall();
+      LoggingService().debug('API call succeeded: $operation');
+      return result;
     } on ApiException catch (e) {
       // Handle specific API errors
+      LoggingService().error('API exception in $operation: ${e.message}', 
+        context: {'statusCode': e.code, 'operation': operation});
+      
       if (e.code == 401) {
         throw AuthError('Authentication failed');
       } else if (e.code == 403) {
@@ -62,7 +72,9 @@ class UnisonApiService {
       } else {
         throw ApiError('API error: ${e.message}');
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      LoggingService().error('Unexpected error in $operation: $e', 
+        stackTrace: stackTrace, context: {'operation': operation});
       if (e is AppError) rethrow;
       throw ApiError('Unexpected error: $e');
     }
@@ -87,7 +99,7 @@ class UnisonApiService {
         return response;
       }
       throw ApiError('Login response was null');
-    });
+    }, operationName: 'User login');
   }
 
   Future<AuthRegisterPost200Response> register({
@@ -110,7 +122,7 @@ class UnisonApiService {
         return response;
       }
       throw ApiError('Registration response was null');
-    });
+    }, operationName: 'User registration');
   }
 
   Future<AuthRegisterPost200Response> refreshToken() async {
@@ -132,7 +144,7 @@ class UnisonApiService {
         return response;
       }
       throw ApiError('Token refresh response was null');
-    });
+    }, operationName: 'Token refresh');
   }
 
   // Friend API methods
@@ -141,7 +153,7 @@ class UnisonApiService {
       final friendApi = FriendApi(_apiClient);
       final response = await friendApi.friendsListGet(await getRequiredToken());
       return response ?? [];
-    });
+    }, operationName: 'Get friends list');
   }
 
   Future<void> sendFriendRequest(String targetUserId) async {
@@ -150,7 +162,7 @@ class UnisonApiService {
       final request = FriendsRequestPostRequest(targetUserID: targetUserId);
       await friendApi.friendsRequestPost(await getRequiredToken(),
           friendsRequestPostRequest: request);
-    });
+    }, operationName: 'Send friend request');
   }
 
   Future<void> approveFriendRequest(String requestId) async {
@@ -159,7 +171,7 @@ class UnisonApiService {
       final request = FriendsApprovePostRequest(id: requestId);
       await friendApi.friendsApprovePost(await getRequiredToken(),
           friendsApprovePostRequest: request);
-    });
+    }, operationName: 'Approve friend request');
   }
 
   Future<void> refuseFriendRequest(String requestId, String reason) async {
@@ -169,7 +181,7 @@ class UnisonApiService {
           FriendsRefusePostRequest(relation: requestId, reason: reason);
       await friendApi.friendsRefusePost(await getRequiredToken(),
           friendsRefusePostRequest: request);
-    });
+    }, operationName: 'Refuse friend request');
   }
 
   /// Get the underlying API client for advanced usage

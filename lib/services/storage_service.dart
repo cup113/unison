@@ -5,6 +5,7 @@ import '../models/todo.dart';
 import '../models/timer_state.dart';
 import '../constants/app_constants.dart';
 import '../utils/app_errors.dart';
+import 'logging_service.dart';
 
 class StorageService {
   static const String _timerStateKey = AppConstants.timerStateKey;
@@ -21,27 +22,53 @@ class StorageService {
 
   /// 保存计时器状态
   static Future<void> saveTimerState(TimerState state) async {
-    final prefs = await _getPrefs();
-    if (state.selectedDuration != null) {
-      await prefs.setString(_timerStateKey, json.encode(state.toJson()));
-    } else {
-      await prefs.remove(_timerStateKey);
+    try {
+      final prefs = await _getPrefs();
+      if (state.selectedDuration != null) {
+        await prefs.setString(_timerStateKey, json.encode(state.toJson()));
+        LoggingService().debug('Timer state saved', context: {
+          'selectedDuration': state.selectedDuration,
+          'remainingSeconds': state.remainingSeconds,
+          'isPaused': state.isPaused,
+        });
+      } else {
+        await prefs.remove(_timerStateKey);
+        LoggingService().debug('Timer state cleared');
+      }
+    } catch (e, stackTrace) {
+      LoggingService().error('Failed to save timer state', stackTrace: stackTrace);
+      rethrow;
     }
   }
 
   /// 加载计时器状态
   static Future<TimerState?> loadTimerState() async {
-    final prefs = await _getPrefs();
-    final timerStateString = prefs.getString(_timerStateKey);
+    try {
+      final prefs = await _getPrefs();
+      final timerStateString = prefs.getString(_timerStateKey);
 
-    if (timerStateString != null) {
-      try {
-        return TimerState.fromJson(json.decode(timerStateString));
-      } catch (e) {
-        return TimerState(isRest: false);
+      if (timerStateString != null) {
+        try {
+          final state = TimerState.fromJson(json.decode(timerStateString));
+          LoggingService().debug('Timer state loaded', context: {
+            'selectedDuration': state.selectedDuration,
+            'remainingSeconds': state.remainingSeconds,
+            'isPaused': state.isPaused,
+          });
+          return state;
+        } catch (e, stackTrace) {
+          // 如果解析失败，清除无效数据
+          LoggingService().warning('Invalid timer state data, clearing corrupted data', 
+            stackTrace: stackTrace);
+          await prefs.remove(_timerStateKey);
+          return TimerState(isRest: false);
+        }
       }
+      return null;
+    } catch (e, stackTrace) {
+      LoggingService().error('Failed to load timer state', stackTrace: stackTrace);
+      rethrow;
     }
-    return null;
   }
 
   /// 清除计时器状态

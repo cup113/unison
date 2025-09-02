@@ -5,6 +5,7 @@ import '../models/focus.dart';
 import '../models/timer_state.dart';
 import 'timer_manager_interface.dart';
 import 'storage_service.dart';
+import 'logging_service.dart';
 
 class TimerManager with ChangeNotifier implements TimerManagerInterface {
   TimerState _state = TimerState();
@@ -32,17 +33,26 @@ class TimerManager with ChangeNotifier implements TimerManagerInterface {
 
   @override
   Future<void> loadFromStorage() async {
-    final state = await StorageService.loadTimerState();
-    if (state != null) {
-      _state = state;
+    try {
+      final state = await StorageService.loadTimerState();
+      if (state != null) {
+        _state = state;
 
-      // 如果有待定的计时器，则恢复它
-      final shouldResume = _state.remainingSeconds != null &&
-          _state.remainingSeconds! > 0 &&
-          !_state.isPaused;
-      if (shouldResume) {
-        resumeTimer();
+        // 如果有待定的计时器，则恢复它
+        final shouldResume = _state.remainingSeconds != null &&
+            _state.remainingSeconds! > 0 &&
+            !_state.isPaused;
+        if (shouldResume) {
+          LoggingService().info('Resuming timer from storage', context: {
+            'remainingSeconds': _state.remainingSeconds,
+            'isPaused': _state.isPaused,
+          });
+          resumeTimer();
+        }
       }
+    } catch (e, stackTrace) {
+      LoggingService().error('Failed to load timer state from storage', 
+        stackTrace: stackTrace);
     }
   }
 
@@ -125,6 +135,11 @@ class TimerManager with ChangeNotifier implements TimerManagerInterface {
     _startTimerPeriodic();
     saveToStorage();
     notifyListeners();
+    
+    LoggingService().info('Timer started', context: {
+      'duration': minutes,
+      'isRest': isRest,
+    });
   }
 
   // 恢复计时器
@@ -172,6 +187,11 @@ class TimerManager with ChangeNotifier implements TimerManagerInterface {
     );
     saveToStorage();
     notifyListeners();
+    
+    LoggingService().info('Timer paused', context: {
+      'remainingSeconds': _state.remainingSeconds,
+      'pauseCount': _state.pauseCount,
+    });
   }
 
   @override
